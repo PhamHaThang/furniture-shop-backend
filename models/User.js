@@ -4,19 +4,19 @@ const userSchema = new mongoose.Schema(
   {
     email: {
       type: String,
-      required: true,
+      required: [true, "Email là bắt buộc"],
       unique: true,
       trim: true,
       match: [/.+\@.+\..+/, "Vui lòng nhập đúng định dạng email"],
     },
     password: {
       type: String,
-      required: true,
-      minLength: 6,
+      required: [true, "Mật khẩu là bắt buộc"],
+      minLength: [6, "Mật khẩu phải có ít nhất 6 ký tự"],
     }, // Hashed password
     fullName: {
       type: String,
-      required: true,
+      required: [true, "Họ tên là bắt buộc"],
       trim: true,
     },
     phone: {

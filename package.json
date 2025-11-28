@@ -1,9 +1,16 @@
 {
   "name": "furniture-shop-backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "Backend for Furniture Shop",
   "license": "ISC",
-  "author": "",
+  "keywords": [
+    "furniture",
+    "ecommerce",
+    "3d",
+    "ar",
+    "ai"
+  ],
+  "author": "PhamHaThang",
   "type": "commonjs",
   "main": "server.js",
   "scripts": {
