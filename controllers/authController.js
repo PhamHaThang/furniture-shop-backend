@@ -26,7 +26,6 @@ exports.register = asyncHandler(async (req, res) => {
       fullName: user.fullName,
       phone: user.phone,
       role: user.role,
-      avatar: user.avatar || "",
     },
     token: generateToken(user._id),
   });
@@ -67,7 +66,6 @@ exports.login = asyncHandler(async (req, res) => {
       fullName: user.fullName,
       phone: user.phone,
       role: user.role,
-      avatar: user.avatar || "",
     },
     token: generateToken(user._id),
   });
@@ -88,14 +86,15 @@ exports.forgotPassword = asyncHandler(async (req, res) => {
       .createHash("sha256")
       .update(resetToken)
       .digest("hex");
+
     user.resetPasswordToken = hashedToken;
     user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
     await user.save({ validateBeforeSave: false });
 
-    const resetUrlBase =
+    const resetUrl = `${
       process.env.FRONTEND_RESET_PASSWORD_URL ||
-      "http://localhost:5173/reset-password";
-    const resetUrl = `${resetUrlBase}/token=${resetToken}`;
+      "http://localhost:5173/reset-password"
+    }/token=${resetToken}`;
 
     const html = `<!DOCTYPE html>
     <html lang="en">
@@ -313,7 +312,6 @@ exports.forgotPassword = asyncHandler(async (req, res) => {
     </body>
     </html>`;
     await sendMail(user.email, "Đặt lại mật khẩu Furniture Shop", html);
-    console.log("Email reset password đã được gửi tới email:", user.email);
     res.status(200).json({
       success: true,
       message: "Liên kết đặt lại mật khẩu đã được gửi đến email của bạn",
@@ -357,7 +355,7 @@ exports.resetPassword = asyncHandler(async (req, res) => {
     throw new AppError(
       400,
       "Token đặt lại mật khẩu không hợp lệ hoặc đã hết hạn",
-      "INVALID_OR_EXPIRED_TOKEN"
+      "INVALID_TOKEN"
     );
   }
   user.password = newPassword;

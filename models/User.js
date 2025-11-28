@@ -30,10 +30,14 @@ const userSchema = new mongoose.Schema(
         phone: { type: String, required: true },
         street: { type: String, required: true },
         city: { type: String, required: true },
-        country: { type: String, required: true },
+        country: { type: String, required: true, default: "Vietnam" },
         isDefault: { type: Boolean, default: false },
       },
     ],
+    avatar: {
+      type: String,
+      default: "",
+    },
     role: {
       type: String,
       enum: ["user", "admin"],
