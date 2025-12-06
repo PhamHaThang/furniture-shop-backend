@@ -1,6 +1,8 @@
 const asyncHandler = require("express-async-handler");
 const User = require("../models/User");
 const AppError = require("../utils/AppError");
+
+// ========== USER PROFILE ROUTES ==========
 // [GET] /api/users/me
 exports.getProfile = asyncHandler(async (req, res) => {
   const user = req.user;
@@ -35,6 +37,38 @@ exports.updateProfile = asyncHandler(async (req, res) => {
     },
   });
 });
+
+// [POST] /api/users/me/avatar - Upload avatar
+exports.uploadAvatar = asyncHandler(async (req, res) => {
+  if (!req.file) {
+    throw new AppError(400, "Vui lòng chọn ảnh để upload", "NO_FILE");
+  }
+
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    throw new AppError(404, "Người dùng không tồn tại", "USER_NOT_FOUND");
+  }
+
+  // Cập nhật avatar
+  user.avatar = req.file.path;
+  await user.save();
+
+  res.json({
+    success: true,
+    message: "Upload avatar thành công",
+    avatar: {
+      url: req.file.path,
+      publicId: req.file.filename,
+    },
+    user: {
+      _id: user._id,
+      fullName: user.fullName,
+      email: user.email,
+      avatar: user.avatar,
+    },
+  });
+});
+
 // [PUT] /api/users/me/password
 exports.changePassword = asyncHandler(async (req, res) => {
   const { currentPassword, newPassword } = req.body;
@@ -148,16 +182,57 @@ exports.deleteAddress = asyncHandler(async (req, res) => {
     addresses: user.address,
   });
 });
-// [GET] api/users
+
+// ========== ADMIN ROUTES ==========
+// [GET] /api/admin/users
 exports.getAllUsers = asyncHandler(async (req, res) => {
-  const users = await User.find().select("-password").sort({ createdAt: -1 });
+  const {
+    page = 1,
+    limit = 10,
+    search,
+    role,
+    sortBy = "-createdAt",
+  } = req.query;
+
+  const filter = {};
+
+  // Search by name or email
+  if (search) {
+    filter.$or = [
+      { fullName: { $regex: search, $options: "i" } },
+      { email: { $regex: search, $options: "i" } },
+      { phone: { $regex: search, $options: "i" } },
+    ];
+  }
+
+  // Filter by role
+  if (role && (role === "user" || role === "admin")) {
+    filter.role = role;
+  }
+
+  const skip = (Number(page) - 1) * Number(limit);
+
+  const users = await User.find(filter)
+    .select("-password")
+    .sort(sortBy)
+    .skip(skip)
+    .limit(Number(limit));
+
+  const total = await User.countDocuments(filter);
+
   res.json({
     success: true,
     message: "Lấy danh sách người dùng thành công",
     users,
+    pagination: {
+      page: Number(page),
+      limit: Number(limit),
+      total,
+      totalPages: Math.ceil(total / Number(limit)),
+    },
   });
 });
-// [GET] /api/users/:id
+// [GET] /api/admin/users/:id
 exports.getUserById = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const user = await User.findById(id).select("-password");
@@ -170,7 +245,7 @@ exports.getUserById = asyncHandler(async (req, res) => {
     user,
   });
 });
-// [POST] /api/users
+// [POST] /api/admin/users
 exports.createUser = asyncHandler(async (req, res) => {
   const { fullName, email, password, role, phone, avatar, address } = req.body;
   const existingUser = await User.findOne({ email });
@@ -201,7 +276,7 @@ exports.createUser = asyncHandler(async (req, res) => {
     },
   });
 });
-// [PUT] /api/users/:id
+// [PUT] /api/admin/users/:id
 exports.updateUserById = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { fullName, phone, role, avatar, address, password } = req.body;
@@ -239,7 +314,7 @@ exports.updateUserById = asyncHandler(async (req, res) => {
     },
   });
 });
-// [DELETE] /api/users/:id
+// [DELETE] /api/admin/users/:id
 exports.deleteUserById = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const user = await User.findById(id);

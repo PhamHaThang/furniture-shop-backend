@@ -18,7 +18,7 @@ const modelStorage = new CloudinaryStorage({
   params: {
     folder: "furniture-shop/models",
     allowedFormats: ["gltf", "glb", "obj", "fbx"],
-    resource_type: "raw",
+    resource_type: "image",
   },
 });
 
@@ -65,6 +65,7 @@ const uploadModel = multer({
 });
 
 module.exports = {
-  uploadImage,
-  uploadModel,
+  uploadImage: uploadImage.single("image"),
+  uploadMultipleImages: uploadImage.array("images", 10),
+  upload3DModel: uploadModel.single("model3D"),
 };

@@ -245,7 +245,7 @@ exports.forgotPassword = asyncHandler(async (req, res) => {
                       <p>Xin chào <strong>${user.fullName}</strong>,</p>
                       <p>
                         Chúng tôi đã nhận được yêu cầu đặt lại mật khẩu cho tài khoản
-                        của bạn tại <strong>Furniture Shop</strong>.
+                        của bạn tại <strong>Homi Shop</strong>.
                       </p>
                       <p>Để tiếp tục, vui lòng nhấp vào nút bên dưới:</p>
 
@@ -285,7 +285,7 @@ exports.forgotPassword = asyncHandler(async (req, res) => {
 
                       <p>
                         Trân trọng,<br /><strong
-                          >Đội ngũ Furniture Shop</strong
+                          >Đội ngũ Homi Shop</strong
                         >
                       </p>
                     </td>
@@ -301,7 +301,7 @@ exports.forgotPassword = asyncHandler(async (req, res) => {
                     <td class="footer">
                       <p>Email này được gửi tự động, vui lòng không trả lời.</p>
                       <p>
-                        &copy; 2025 Furniture Shop. All rights reserved.
+                        &copy; 2025 Homi Shop. All rights reserved.
                       </p>
                     </td>
                   </tr>
@@ -311,7 +311,7 @@ exports.forgotPassword = asyncHandler(async (req, res) => {
           </table>
     </body>
     </html>`;
-    await sendMail(user.email, "Đặt lại mật khẩu Furniture Shop", html);
+    await sendMail(user.email, "Đặt lại mật khẩu Homi Shop", html);
     res.status(200).json({
       success: true,
       message: "Liên kết đặt lại mật khẩu đã được gửi đến email của bạn",
@@ -517,7 +517,7 @@ exports.resetPassword = asyncHandler(async (req, res) => {
 
                       <p style="text-align: center;">Xin chào <strong>${user.fullName}</strong>,</p>
                       <p style="text-align: center;">
-                        Mật khẩu cho tài khoản của bạn tại <strong>Furniture Shop</strong> đã được đặt lại thành công.
+                        Mật khẩu cho tài khoản của bạn tại <strong>Homi Shop</strong> đã được đặt lại thành công.
                       </p>
 
                       <table width="100%" border="0" cellspacing="0" cellpadding="0">
@@ -536,7 +536,7 @@ exports.resetPassword = asyncHandler(async (req, res) => {
 
                       <p>
                         Trân trọng,<br /><strong
-                          >Đội ngũ Furniture Shop</strong
+                          >Đội ngũ Homi Shop</strong
                         >
                       </p>
                     </td>
@@ -552,7 +552,7 @@ exports.resetPassword = asyncHandler(async (req, res) => {
                     <td class="footer">
                       <p>Email này được gửi tự động, vui lòng không trả lời.</p>
                       <p>
-                        &copy; 2025 Furniture Shop. All rights reserved.
+                        &copy; 2025 Homi Shop. All rights reserved.
                       </p>
                     </td>
                   </tr>
@@ -564,11 +564,7 @@ exports.resetPassword = asyncHandler(async (req, res) => {
       </html>
     `;
 
-    await sendMail(
-      user.email,
-      "Xác nhận đặt lại mật khẩu Furniture Shop",
-      html
-    );
+    await sendMail(user.email, "Xác nhận đặt lại mật khẩu Homi Shop", html);
   } catch (emailError) {
     console.error("Failed to send confirmation email:", emailError);
   }

@@ -12,7 +12,6 @@ const categorySchema = new mongoose.Schema(
     slug: {
       type: String,
       unique: true,
-      required: true,
       index: true,
     },
     description: {
@@ -20,6 +19,7 @@ const categorySchema = new mongoose.Schema(
     },
     image: {
       type: String,
+      default: null,
     },
     parentCategory: {
       type: mongoose.Schema.Types.ObjectId,

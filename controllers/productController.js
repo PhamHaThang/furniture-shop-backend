@@ -1,0 +1,305 @@
+const asyncHandler = require("express-async-handler");
+const Product = require("../models/Product");
+const AppError = require("../utils/AppError");
+
+// ========== PUBLIC ROUTES ==========
+// [GET] /api/products?category=id&brand=id&price_min=&price_max=&search=&page=&limit=
+// [GET] /api/admin/products
+exports.getAllProducts = asyncHandler(async (req, res) => {
+  const {
+    category,
+    brand,
+    price_min,
+    price_max,
+    search,
+    page = 1,
+    limit = 10,
+  } = req.query;
+
+  const filter = {};
+  if (category) filter.category = category;
+  if (brand) filter.brand = brand;
+  if (price_min || price_max) {
+    filter.price = {};
+    if (price_min) filter.price.$gte = Number(price_min);
+    if (price_max) filter.price.$lte = Number(price_max);
+  }
+  if (search) {
+    filter.$or = [
+      { name: { $regex: search, $options: "i" } },
+      { description: { $regex: search, $options: "i" } },
+    ];
+  }
+  const skip = (Number(page) - 1) * Number(limit);
+
+  const products = await Product.find(filter)
+    .populate("category", "name slug")
+    .populate("brand", "name slug")
+    .skip(skip)
+    .limit(Number(limit))
+    .sort({ createdAt: -1 });
+  const total = await Product.countDocuments(filter);
+  res.json({
+    success: true,
+    message: "Lấy danh sách sản phẩm thành công",
+    products,
+    pagination: {
+      page: Number(page),
+      limit: Number(limit),
+      total,
+      totalPages: Math.ceil(total / Number(limit)),
+    },
+  });
+});
+// [GET] /api/products/:slug
+exports.getProductBySlug = asyncHandler(async (req, res) => {
+  const { slug } = req.params;
+  const product = await Product.findOne({ slug })
+    .populate("category", "name slug")
+    .populate("brand", "name slug");
+  if (!product) {
+    throw new AppError(404, "Sản phẩm không tồn tại", "PRODUCT_NOT_FOUND");
+  }
+  res.json({
+    success: true,
+    message: "Lấy thông tin sản phẩm thành công",
+    product,
+  });
+});
+
+// [GET] /api/products/featured - Lấy sản phẩm nổi bật
+exports.getFeaturedProducts = asyncHandler(async (req, res) => {
+  const { limit = 8 } = req.query;
+
+  const products = await Product.find({})
+    .populate("category", "name slug")
+    .populate("brand", "name slug")
+    .sort({ averageRating: -1, totalReviews: -1 })
+    .limit(Number(limit));
+
+  res.json({
+    success: true,
+    message: "Lấy sản phẩm nổi bật thành công",
+    products,
+  });
+});
+
+// [GET] /api/products/new-arrivals - Lấy sản phẩm mới
+exports.getNewArrivals = asyncHandler(async (req, res) => {
+  const { limit = 8 } = req.query;
+
+  const products = await Product.find({})
+    .populate("category", "name slug")
+    .populate("brand", "name slug")
+    .sort({ createdAt: -1 })
+    .limit(Number(limit));
+
+  res.json({
+    success: true,
+    message: "Lấy sản phẩm mới thành công",
+    products,
+  });
+});
+
+// [GET] /api/products/best-sellers - Lấy sản phẩm bán chạy
+exports.getBestSellers = asyncHandler(async (req, res) => {
+  const { limit = 8 } = req.query;
+
+  const products = await Product.find({})
+    .populate("category", "name slug")
+    .populate("brand", "name slug")
+    .sort({ soldCount: -1 })
+    .limit(Number(limit));
+
+  res.json({
+    success: true,
+    message: "Lấy sản phẩm bán chạy thành công",
+    products,
+  });
+});
+
+// [GET] /api/products/related/:productId - Lấy sản phẩm liên quan
+exports.getRelatedProducts = asyncHandler(async (req, res) => {
+  const { productId } = req.params;
+  const { limit = 4 } = req.query;
+
+  const product = await Product.findById(productId);
+
+  if (!product) {
+    throw new AppError(404, "Sản phẩm không tồn tại", "PRODUCT_NOT_FOUND");
+  }
+
+  const relatedProducts = await Product.find({
+    _id: { $ne: productId },
+    $or: [
+      { category: product.category },
+      { brand: product.brand },
+      { tags: { $in: product.tags } },
+    ],
+  })
+    .populate("category", "name slug")
+    .populate("brand", "name slug")
+    .limit(Number(limit))
+    .sort({ averageRating: -1 });
+
+  res.json({
+    success: true,
+    message: "Lấy sản phẩm liên quan thành công",
+    products: relatedProducts,
+  });
+});
+
+// ========== ADMIN ROUTES ==========
+// [GET] /api/admin/products/:id
+exports.getProductById = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const product = await Product.findById(id)
+    .populate("category", "name slug")
+    .populate("brand", "name slug");
+  if (!product) {
+    throw new AppError(404, "Sản phẩm không tồn tại", "PRODUCT_NOT_FOUND");
+  }
+  res.json({
+    success: true,
+    message: "Lấy thông tin sản phẩm thành công",
+    product,
+  });
+});
+// [POST] /api/admin/products
+exports.createProduct = asyncHandler(async (req, res) => {
+  const {
+    name,
+    sku,
+    description,
+    price,
+    category,
+    brand,
+    stock,
+    images,
+    model3DUrl,
+    dimensions,
+    colors,
+    materials,
+    tags,
+  } = req.body;
+
+  // Validate required fields
+  if (!name || !sku || !description || !price || !category || !brand) {
+    throw new AppError(
+      400,
+      "Vui lòng cung cấp đầy đủ thông tin sản phẩm",
+      "MISSING_REQUIRED_FIELDS"
+    );
+  }
+
+  // Check SKU exists
+  const existingSKU = await Product.findOne({ sku });
+  if (existingSKU) {
+    throw new AppError(400, "SKU đã tồn tại", "SKU_EXISTS");
+  }
+
+  const product = await Product.create({
+    name,
+    sku,
+    description,
+    price,
+    category,
+    brand,
+    stock: stock || 0,
+    images: images || [],
+    model3DUrl,
+    dimensions,
+    colors: colors || [],
+    materials: materials || [],
+    tags: tags || [],
+  });
+
+  const populatedProduct = await Product.findById(product._id)
+    .populate("category", "name slug")
+    .populate("brand", "name slug");
+
+  res.status(201).json({
+    success: true,
+    message: "Tạo sản phẩm thành công",
+    product: populatedProduct,
+  });
+});
+
+// [PUT] /api/admin/products/:id
+exports.updateProduct = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const {
+    name,
+    sku,
+    description,
+    price,
+    category,
+    brand,
+    stock,
+    images,
+    model3DUrl,
+    dimensions,
+    colors,
+    materials,
+    tags,
+  } = req.body;
+
+  const product = await Product.findById(id);
+
+  if (!product) {
+    throw new AppError(404, "Sản phẩm không tồn tại", "PRODUCT_NOT_FOUND");
+  }
+
+  // Check SKU if changed
+  if (sku && sku !== product.sku) {
+    const existingSKU = await Product.findOne({ sku });
+    if (existingSKU) {
+      throw new AppError(400, "SKU đã tồn tại", "SKU_EXISTS");
+    }
+  }
+
+  // Update fields
+  product.name = name || product.name;
+  product.sku = sku || product.sku;
+  product.description = description || product.description;
+  product.price = price !== undefined ? price : product.price;
+  product.category = category || product.category;
+  product.brand = brand || product.brand;
+  product.stock = stock !== undefined ? stock : product.stock;
+  product.images = images || product.images;
+  product.model3DUrl = model3DUrl || product.model3DUrl;
+  product.dimensions = dimensions || product.dimensions;
+  product.colors = colors || product.colors;
+  product.materials = materials || product.materials;
+  product.tags = tags || product.tags;
+
+  const updatedProduct = await product.save();
+
+  const populatedProduct = await Product.findById(updatedProduct._id)
+    .populate("category", "name slug")
+    .populate("brand", "name slug");
+
+  res.json({
+    success: true,
+    message: "Cập nhật sản phẩm thành công",
+    product: populatedProduct,
+  });
+});
+
+// [DELETE] /api/admin/products/:id
+exports.deleteProduct = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const product = await Product.findById(id);
+
+  if (!product) {
+    throw new AppError(404, "Sản phẩm không tồn tại", "PRODUCT_NOT_FOUND");
+  }
+
+  await Product.findByIdAndDelete(id);
+
+  res.json({
+    success: true,
+    message: "Xóa sản phẩm thành công",
+  });
+});

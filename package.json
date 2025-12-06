@@ -1,7 +1,7 @@
 {
   "name": "furniture-shop-backend",
   "version": "1.0.0",
-  "description": "Backend for Furniture Shop",
+  "description": "Backend for Homi Shop",
   "license": "ISC",
   "keywords": [
     "furniture",
@@ -32,7 +32,9 @@
     "multer": "^2.0.2",
     "multer-storage-cloudinary": "^4.0.0",
     "nodemailer": "^7.0.10",
-    "slugify": "^1.6.6"
+    "slugify": "^1.6.6",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.11"

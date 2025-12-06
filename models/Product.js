@@ -12,7 +12,6 @@ const productSchema = new mongoose.Schema(
     slug: {
       type: String,
       unique: true,
-      required: true,
       index: true,
     },
     sku: {
@@ -78,15 +77,26 @@ const productSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+    soldCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
   {
     timestamps: true,
   }
 );
 // Tạo slug tự động trước khi lưu
-productSchema.pre("save", function (next) {
+productSchema.pre("save", async function (next) {
   if (this.isModified("name")) {
-    this.slug = slugify(this.name, { lower: true, strict: true });
+    let baseSlug = slugify(this.name, { lower: true, strict: true });
+    let slug = baseSlug;
+    let counter = 1;
+    while (await mongoose.models.Product.findOne({ slug })) {
+      slug = `${baseSlug}-${counter++}`;
+    }
+    this.slug = slug;
   }
   next();
 });

@@ -42,7 +42,7 @@ const orderSchema = new mongoose.Schema(
       country: { type: String, required: true },
     },
     payment: {
-      method: { type: String, required: true, enum: ["COD", "Online"] },
+      method: { type: String, required: true, enum: ["COD"] },
       status: {
         type: String,
         required: true,
