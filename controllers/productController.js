@@ -1,43 +1,92 @@
 const asyncHandler = require("express-async-handler");
 const Product = require("../models/Product");
+const Category = require("../models/Category");
 const AppError = require("../utils/AppError");
 
 // ========== PUBLIC ROUTES ==========
-// [GET] /api/products?category=id&brand=id&price_min=&price_max=&search=&page=&limit=
+// [GET] /api/products?category=id&brand=id&minPrice=&maxPrice=&search=&page=&limit=&sort=
 // [GET] /api/admin/products
 exports.getAllProducts = asyncHandler(async (req, res) => {
   const {
     category,
     brand,
-    price_min,
-    price_max,
+    minPrice,
+    maxPrice,
     search,
+    sort,
     page = 1,
     limit = 10,
   } = req.query;
 
   const filter = {};
-  if (category) filter.category = category;
-  if (brand) filter.brand = brand;
-  if (price_min || price_max) {
-    filter.price = {};
-    if (price_min) filter.price.$gte = Number(price_min);
-    if (price_max) filter.price.$lte = Number(price_max);
+
+  if (category) {
+    const subcategories = await Category.find({
+      parentCategory: category,
+    }).select("_id");
+    if (subcategories.length > 0) {
+      const categoryIds = [category, ...subcategories.map((sub) => sub._id)];
+      filter.category = { $in: categoryIds };
+    } else {
+      filter.category = category;
+    }
   }
+
+  if (brand) filter.brand = brand;
+
+  const priceMin = minPrice;
+  const priceMax = maxPrice;
+  if (priceMin || priceMax) {
+    filter.price = {};
+    if (priceMin) filter.price.$gte = Number(priceMin);
+    if (priceMax) filter.price.$lte = Number(priceMax);
+  }
+
   if (search) {
     filter.$or = [
       { name: { $regex: search, $options: "i" } },
       { description: { $regex: search, $options: "i" } },
     ];
   }
-  const skip = (Number(page) - 1) * Number(limit);
 
+  // Sorting
+  let sortOption = { createdAt: -1 }; // newest
+  if (sort) {
+    switch (sort) {
+      case "oldest":
+        sortOption = { createdAt: 1 };
+        break;
+      case "price-asc":
+        sortOption = { price: 1 };
+        break;
+      case "price-desc":
+        sortOption = { price: -1 };
+        break;
+      case "name-asc":
+        sortOption = { name: 1 };
+        break;
+      case "name-desc":
+        sortOption = { name: -1 };
+        break;
+      case "best-seller":
+        sortOption = { soldCount: -1 };
+        break;
+      case "rating":
+        sortOption = { averageRating: -1 };
+        break;
+      default:
+        sortOption = { createdAt: -1 };
+    }
+  }
+
+  const skip = (Number(page) - 1) * Number(limit);
   const products = await Product.find(filter)
     .populate("category", "name slug")
     .populate("brand", "name slug")
     .skip(skip)
     .limit(Number(limit))
-    .sort({ createdAt: -1 });
+    .sort(sortOption);
+
   const total = await Product.countDocuments(filter);
   res.json({
     success: true,

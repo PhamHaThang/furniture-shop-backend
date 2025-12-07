@@ -22,13 +22,24 @@ exports.getAllBrands = asyncHandler(async (req, res) => {
       .sort({ name: 1 })
       .skip(skip)
       .limit(Number(limit));
+    const brandsWithCount = await Promise.all(
+      brands.map(async (brand) => {
+        const productCount = await Product.countDocuments({
+          brand: brand._id,
+        });
 
+        return {
+          ...brand.toObject(),
+          productCount,
+        };
+      })
+    );
     const total = await Brand.countDocuments(query);
 
     return res.json({
       success: true,
       message: "Lấy danh sách thương hiệu thành công",
-      brands,
+      brands: brandsWithCount,
       pagination: {
         page: Number(page),
         limit: Number(limit),
@@ -39,11 +50,22 @@ exports.getAllBrands = asyncHandler(async (req, res) => {
   }
   // No pagination
   const brands = await Brand.find(query).sort({ name: 1 });
+  const brandsWithCount = await Promise.all(
+    brands.map(async (brand) => {
+      const productCount = await Product.countDocuments({
+        brand: brand._id,
+      });
 
+      return {
+        ...brand.toObject(),
+        productCount,
+      };
+    })
+  );
   res.json({
     success: true,
     message: "Lấy danh sách thương hiệu thành công",
-    brands,
+    brands: brandsWithCount,
   });
 });
 
