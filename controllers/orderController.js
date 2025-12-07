@@ -16,10 +16,12 @@ exports.createOrder = asyncHandler(async (req, res) => {
   // Validate shippingAddress
   if (
     !shippingAddress ||
-    !shippingAddress.name ||
+    !shippingAddress.fullName ||
     !shippingAddress.phone ||
-    !shippingAddress.street ||
-    !shippingAddress.city
+    !shippingAddress.province ||
+    !shippingAddress.district ||
+    !shippingAddress.ward ||
+    !shippingAddress.address
   ) {
     throw new AppError(
       400,
@@ -29,7 +31,7 @@ exports.createOrder = asyncHandler(async (req, res) => {
   }
 
   // Validate paymentMethod
-  if (!paymentMethod || !["COD"].includes(paymentMethod)) {
+  if (!paymentMethod || !["COD", "BANK"].includes(paymentMethod)) {
     throw new AppError(
       400,
       "Phương thức thanh toán không hợp lệ",
@@ -139,11 +141,12 @@ exports.createOrder = asyncHandler(async (req, res) => {
     code,
     items: orderItems,
     shippingAddress: {
-      name: shippingAddress.name,
+      fullName: shippingAddress.fullName,
       phone: shippingAddress.phone,
-      street: shippingAddress.street,
-      city: shippingAddress.city,
-      country: shippingAddress.country || "Vietnam",
+      province: shippingAddress.province,
+      district: shippingAddress.district,
+      ward: shippingAddress.ward,
+      address: shippingAddress.address,
     },
     payment: {
       method: paymentMethod,
@@ -351,7 +354,7 @@ exports.getAllOrders = asyncHandler(async (req, res) => {
   if (search) {
     query.$or = [
       { code: { $regex: search, $options: "i" } },
-      { "shippingAddress.name": { $regex: search, $options: "i" } },
+      { "shippingAddress.fullName": { $regex: search, $options: "i" } },
       { "shippingAddress.phone": { $regex: search, $options: "i" } },
     ];
   }

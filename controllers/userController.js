@@ -119,7 +119,8 @@ exports.getAddresses = asyncHandler(async (req, res) => {
 });
 // [POST] /api/users/me/address
 exports.addAddress = asyncHandler(async (req, res) => {
-  const { name, phone, street, city, country, isDefault } = req.body;
+  const { fullName, phone, province, district, ward, address, isDefault } =
+    req.body;
   const user = await User.findById(req.user._id);
   if (!user) {
     throw new AppError(404, "Người dùng không tồn tại", "USER_NOT_FOUND");
@@ -127,7 +128,15 @@ exports.addAddress = asyncHandler(async (req, res) => {
   if (isDefault) {
     user.address.forEach((addr) => (addr.isDefault = false));
   }
-  user.address.push({ name, phone, street, city, country, isDefault });
+  user.address.push({
+    fullName,
+    phone,
+    province,
+    district,
+    ward,
+    address,
+    isDefault,
+  });
   await user.save();
   res.status(201).json({
     success: true,
@@ -138,24 +147,26 @@ exports.addAddress = asyncHandler(async (req, res) => {
 // [PUT] /api/users/me/address/:id
 exports.updateAddress = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { name, phone, street, city, country, isDefault } = req.body;
+  const { fullName, phone, province, district, ward, address, isDefault } =
+    req.body;
   const user = await User.findById(req.user._id);
   if (!user) {
     throw new AppError(404, "Người dùng không tồn tại", "USER_NOT_FOUND");
   }
-  const address = user.address.id(id);
-  if (!address) {
+  const addr = user.address.id(id);
+  if (!addr) {
     throw new AppError(404, "Địa chỉ không tồn tại", "ADDRESS_NOT_FOUND");
   }
   if (isDefault) {
-    user.address.forEach((addr) => (addr.isDefault = false));
+    user.address.forEach((a) => (a.isDefault = false));
   }
-  address.name = name || address.name;
-  address.phone = phone || address.phone;
-  address.street = street || address.street;
-  address.city = city || address.city;
-  address.country = country || address.country;
-  address.isDefault = isDefault !== undefined ? isDefault : address.isDefault;
+  addr.fullName = fullName || addr.fullName;
+  addr.phone = phone || addr.phone;
+  addr.province = province || addr.province;
+  addr.district = district || addr.district;
+  addr.ward = ward || addr.ward;
+  addr.address = address || addr.address;
+  addr.isDefault = isDefault !== undefined ? isDefault : addr.isDefault;
   await user.save();
   res.json({
     success: true,

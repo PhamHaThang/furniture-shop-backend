@@ -35,14 +35,15 @@ const orderSchema = new mongoose.Schema(
       },
     ],
     shippingAddress: {
-      name: { type: String, required: true },
+      fullName: { type: String, required: true },
       phone: { type: String, required: true },
-      street: { type: String, required: true },
-      city: { type: String, required: true },
-      country: { type: String, required: true },
+      province: { type: String, required: true },
+      district: { type: String, required: true },
+      ward: { type: String, required: true },
+      address: { type: String, required: true },
     },
     payment: {
-      method: { type: String, required: true, enum: ["COD"] },
+      method: { type: String, required: true, enum: ["COD", "BANK"] },
       status: {
         type: String,
         required: true,
