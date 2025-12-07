@@ -263,6 +263,11 @@ exports.createUser = asyncHandler(async (req, res) => {
   if (existingUser) {
     throw new AppError(400, "Email đã được sử dụng", "USER_EXISTS");
   }
+  let normalizedAddress = [];
+
+  if (Array.isArray(address) && address.length > 0) {
+    normalizedAddress = address.filter((a) => a && Object.keys(a).length > 0);
+  }
   const newUser = new User({
     fullName,
     email,
@@ -270,7 +275,7 @@ exports.createUser = asyncHandler(async (req, res) => {
     role: role || "user",
     phone,
     avatar,
-    address,
+    address: normalizedAddress,
   });
   const savedUser = await newUser.save();
   res.status(201).json({

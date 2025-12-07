@@ -24,17 +24,20 @@ const userSchema = new mongoose.Schema(
       // unique: true,
       // sparse: true,
     },
-    address: [
-      {
-        fullName: { type: String, required: true },
-        phone: { type: String, required: true },
-        province: { type: String, required: true },
-        district: { type: String, required: true },
-        ward: { type: String, required: true },
-        address: { type: String, required: true },
-        isDefault: { type: Boolean, default: false },
-      },
-    ],
+    address: {
+      type: [
+        {
+          fullName: { type: String },
+          phone: { type: String },
+          province: { type: String },
+          district: { type: String },
+          ward: { type: String },
+          address: { type: String },
+          isDefault: { type: Boolean, default: false },
+        },
+      ],
+      default: [],
+    },
     avatar: {
       type: String,
       default: "",
