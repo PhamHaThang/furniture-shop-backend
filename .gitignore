@@ -23,6 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 
+# Environment variables
 .env
 .env.*.local
 .env.local
@@ -37,3 +38,7 @@ dist-ssr
 
 API_DOCUMENTATION.md
 README.md
+DEPLOYMENT.md
+
+# Vercel
+.vercel

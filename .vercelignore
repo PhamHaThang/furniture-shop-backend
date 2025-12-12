@@ -1,0 +1,9 @@
+node_modules
+.env
+.env.*
+*.log
+.git
+.gitignore
+README.md
+API_DOCUMENTATION.md
+API_DOCUMENTATION_UPDATED.md
