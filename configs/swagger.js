@@ -67,6 +67,8 @@ const options = {
             sku: { type: "string", example: "SOFA-001" },
             description: { type: "string" },
             price: { type: "number", example: 5000000 },
+            originalPrice: { type: "number", example: 6000000 },
+            isFeatured: { type: "boolean", example: false },
             images: {
               type: "array",
               items: { type: "string" },

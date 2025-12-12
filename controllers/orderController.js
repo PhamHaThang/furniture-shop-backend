@@ -11,7 +11,8 @@ const { generateOrderCode } = require("../utils/generateOrderCode");
 // [POST] /api/orders - Tạo đơn hàng mới
 exports.createOrder = asyncHandler(async (req, res) => {
   const userId = req.user._id;
-  const { shippingAddress, paymentMethod, discountCode } = req.body;
+  const { shippingAddress, paymentMethod, discountCode, notes, transactionId } =
+    req.body;
 
   // Validate shippingAddress
   if (
@@ -36,6 +37,15 @@ exports.createOrder = asyncHandler(async (req, res) => {
       400,
       "Phương thức thanh toán không hợp lệ",
       "INVALID_PAYMENT_METHOD"
+    );
+  }
+
+  // Validate transactionId nếu là BANK
+  if (paymentMethod === "BANK" && !transactionId) {
+    throw new AppError(
+      400,
+      "Vui lòng xác nhận thanh toán trước khi đặt hàng",
+      "TRANSACTION_ID_REQUIRED"
     );
   }
 
@@ -150,13 +160,15 @@ exports.createOrder = asyncHandler(async (req, res) => {
     },
     payment: {
       method: paymentMethod,
-      status: paymentMethod === "COD" ? "pending" : "pending",
+      status: paymentMethod === "BANK" ? "completed" : "pending",
+      transactionId: paymentMethod === "BANK" ? transactionId : undefined,
     },
     subTotal,
     shippingFee,
     discount,
     totalAmount,
     status: "pending",
+    notes: notes || "",
   });
 
   // Giảm stock và tăng soldCount

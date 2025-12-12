@@ -28,6 +28,10 @@ const productSchema = new mongoose.Schema(
       required: [true, "Giá sản phẩm là bắt buộc"],
       min: [0, "Giá sản phẩm không được âm"],
     },
+    originalPrice: {
+      type: Number,
+      min: [0, "Giá gốc không được âm"],
+    },
     category: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Category",
@@ -81,6 +85,10 @@ const productSchema = new mongoose.Schema(
       type: Number,
       default: 0,
       min: 0,
+    },
+    isFeatured: {
+      type: Boolean,
+      default: false,
     },
   },
   {

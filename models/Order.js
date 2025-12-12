@@ -1,4 +1,3 @@
-const e = require("express");
 const mongoose = require("mongoose");
 
 const orderSchema = new mongoose.Schema(
@@ -72,6 +71,9 @@ const orderSchema = new mongoose.Schema(
     totalAmount: {
       type: Number,
       required: true,
+    },
+    notes: {
+      type: String,
     },
   },
   {

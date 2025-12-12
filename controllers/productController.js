@@ -120,10 +120,10 @@ exports.getProductBySlug = asyncHandler(async (req, res) => {
 exports.getFeaturedProducts = asyncHandler(async (req, res) => {
   const { limit = 8 } = req.query;
 
-  const products = await Product.find({})
+  const products = await Product.find({ isFeatured: true })
     .populate("category", "name slug")
     .populate("brand", "name slug")
-    .sort({ averageRating: -1, totalReviews: -1 })
+    .sort({ averageRating: -1, totalReviews: -1, createdAt: -1 })
     .limit(Number(limit));
 
   res.json({
@@ -221,6 +221,7 @@ exports.createProduct = asyncHandler(async (req, res) => {
     sku,
     description,
     price,
+    originalPrice,
     category,
     brand,
     stock,
@@ -230,6 +231,7 @@ exports.createProduct = asyncHandler(async (req, res) => {
     colors,
     materials,
     tags,
+    isFeatured,
   } = req.body;
 
   // Validate required fields
@@ -252,6 +254,7 @@ exports.createProduct = asyncHandler(async (req, res) => {
     sku,
     description,
     price,
+    originalPrice,
     category,
     brand,
     stock: stock || 0,
@@ -261,6 +264,7 @@ exports.createProduct = asyncHandler(async (req, res) => {
     colors: colors || [],
     materials: materials || [],
     tags: tags || [],
+    isFeatured: isFeatured || false,
   });
 
   const populatedProduct = await Product.findById(product._id)
@@ -282,6 +286,7 @@ exports.updateProduct = asyncHandler(async (req, res) => {
     sku,
     description,
     price,
+    originalPrice,
     category,
     brand,
     stock,
@@ -291,6 +296,7 @@ exports.updateProduct = asyncHandler(async (req, res) => {
     colors,
     materials,
     tags,
+    isFeatured,
   } = req.body;
 
   const product = await Product.findById(id);
@@ -312,6 +318,8 @@ exports.updateProduct = asyncHandler(async (req, res) => {
   product.sku = sku || product.sku;
   product.description = description || product.description;
   product.price = price !== undefined ? price : product.price;
+  product.originalPrice =
+    originalPrice !== undefined ? originalPrice : product.originalPrice;
   product.category = category || product.category;
   product.brand = brand || product.brand;
   product.stock = stock !== undefined ? stock : product.stock;
@@ -321,6 +329,8 @@ exports.updateProduct = asyncHandler(async (req, res) => {
   product.colors = colors || product.colors;
   product.materials = materials || product.materials;
   product.tags = tags || product.tags;
+  product.isFeatured =
+    isFeatured !== undefined ? isFeatured : product.isFeatured;
 
   const updatedProduct = await product.save();
 
