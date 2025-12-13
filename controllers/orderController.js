@@ -491,7 +491,13 @@ exports.updatePaymentStatus = asyncHandler(async (req, res) => {
   if (!order) {
     throw new AppError(404, "Đơn hàng không tồn tại", "ORDER_NOT_FOUND");
   }
-
+  if (order.status === "cancelled") {
+    throw new AppError(
+      400,
+      "Không thể cập nhật trạng thái thanh toán cho đơn hàng đã hủy",
+      "ORDER_CANCELLED"
+    );
+  }
   order.payment.status = paymentStatus;
   await order.save();
 
