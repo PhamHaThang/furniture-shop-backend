@@ -3,7 +3,7 @@ const Review = require("../models/Review");
 const Product = require("../models/Product");
 const Order = require("../models/Order");
 const AppError = require("../utils/AppError");
-
+const mongoose = require("mongoose");
 // Helper function: Cập nhật rating của product
 const updateProductRating = async (productId) => {
   const reviews = await Review.find({ product: productId });
@@ -53,10 +53,11 @@ exports.getReviewsByProduct = asyncHandler(async (req, res) => {
     .limit(Number(limit));
 
   const total = await Review.countDocuments(query);
+  const productIdx = new mongoose.Types.ObjectId(req.params.productId);
 
   // Rating statistics
   const ratingStats = await Review.aggregate([
-    { $match: { product: new require("mongoose").Types.ObjectId(productId) } },
+    { $match: { product: productIdx } },
     {
       $group: {
         _id: "$rating",
