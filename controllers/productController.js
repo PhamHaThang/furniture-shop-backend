@@ -1,10 +1,11 @@
 const asyncHandler = require("express-async-handler");
 const Product = require("../models/Product");
 const Category = require("../models/Category");
+const Order = require("../models/Order");
 const AppError = require("../utils/AppError");
 
 // ========== PUBLIC ROUTES ==========
-// [GET] /api/products?category=id&brand=id&minPrice=&maxPrice=&search=&page=&limit=&sort=
+// [GET] /api/products?category=id&brand=id&minPrice=&maxPrice=&search=&page=&limit=&sort=&deleted=
 // [GET] /api/admin/products
 exports.getAllProducts = asyncHandler(async (req, res) => {
   const {
@@ -16,9 +17,18 @@ exports.getAllProducts = asyncHandler(async (req, res) => {
     sort,
     page = 1,
     limit = 10,
+    deleted = "active", // active | all | deleted
   } = req.query;
 
   const filter = {};
+
+  // Handle deleted filter
+  if (deleted === "active") {
+    filter.isDeleted = false;
+  } else if (deleted === "deleted") {
+    filter.isDeleted = true;
+  }
+  // If deleted === "all", don't add isDeleted filter
 
   if (category) {
     const subcategories = await Category.find({
@@ -103,7 +113,7 @@ exports.getAllProducts = asyncHandler(async (req, res) => {
 // [GET] /api/products/:slug
 exports.getProductBySlug = asyncHandler(async (req, res) => {
   const { slug } = req.params;
-  const product = await Product.findOne({ slug })
+  const product = await Product.findOne({ slug, isDeleted: false })
     .populate("category", "name slug")
     .populate("brand", "name slug");
   if (!product) {
@@ -120,7 +130,7 @@ exports.getProductBySlug = asyncHandler(async (req, res) => {
 exports.getFeaturedProducts = asyncHandler(async (req, res) => {
   const { limit = 8 } = req.query;
 
-  const products = await Product.find({ isFeatured: true })
+  const products = await Product.find({ isFeatured: true, isDeleted: false })
     .populate("category", "name slug")
     .populate("brand", "name slug")
     .sort({ averageRating: -1, totalReviews: -1, createdAt: -1 })
@@ -137,7 +147,7 @@ exports.getFeaturedProducts = asyncHandler(async (req, res) => {
 exports.getNewArrivals = asyncHandler(async (req, res) => {
   const { limit = 8 } = req.query;
 
-  const products = await Product.find({})
+  const products = await Product.find({ isDeleted: false })
     .populate("category", "name slug")
     .populate("brand", "name slug")
     .sort({ createdAt: -1 })
@@ -154,7 +164,7 @@ exports.getNewArrivals = asyncHandler(async (req, res) => {
 exports.getBestSellers = asyncHandler(async (req, res) => {
   const { limit = 8 } = req.query;
 
-  const products = await Product.find({})
+  const products = await Product.find({ isDeleted: false })
     .populate("category", "name slug")
     .populate("brand", "name slug")
     .sort({ soldCount: -1 })
@@ -180,6 +190,7 @@ exports.getRelatedProducts = asyncHandler(async (req, res) => {
 
   const relatedProducts = await Product.find({
     _id: { $ne: productId },
+    isDeleted: false,
     $or: [
       { category: product.category },
       { brand: product.brand },
@@ -297,6 +308,7 @@ exports.updateProduct = asyncHandler(async (req, res) => {
     materials,
     tags,
     isFeatured,
+    isDeleted,
   } = req.body;
 
   const product = await Product.findById(id);
@@ -331,6 +343,7 @@ exports.updateProduct = asyncHandler(async (req, res) => {
   product.tags = tags || product.tags;
   product.isFeatured =
     isFeatured !== undefined ? isFeatured : product.isFeatured;
+  product.isDeleted = isDeleted !== undefined ? isDeleted : product.isDeleted;
 
   const updatedProduct = await product.save();
 
@@ -355,7 +368,23 @@ exports.deleteProduct = asyncHandler(async (req, res) => {
     throw new AppError(404, "Sản phẩm không tồn tại", "PRODUCT_NOT_FOUND");
   }
 
-  await Product.findByIdAndDelete(id);
+  // Kiểm tra sản phẩm có trong đơn hàng đang xử lý không
+  const activeOrders = await Order.countDocuments({
+    "items.product": id,
+    status: { $in: ["pending", "processing", "shipped"] },
+  });
+
+  if (activeOrders > 0) {
+    throw new AppError(
+      400,
+      `Không thể xóa sản phẩm vì đang có ${activeOrders} đơn hàng đang xử lý`,
+      "PRODUCT_IN_ACTIVE_ORDERS"
+    );
+  }
+
+  // Soft delete - chuyển isDeleted thành true
+  product.isDeleted = true;
+  await product.save();
 
   res.json({
     success: true,
