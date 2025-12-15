@@ -382,9 +382,9 @@ exports.getAllOrders = asyncHandler(async (req, res) => {
 
   const total = await Order.countDocuments(query);
 
-  // Calculate stats
+  // Calculate stats - chỉ tính đơn hàng đã giao
   const totalRevenue = await Order.aggregate([
-    { $match: { status: { $ne: "cancelled" } } },
+    { $match: { status: "delivered" } },
     { $group: { _id: null, total: { $sum: "$totalAmount" } } },
   ]);
 
@@ -564,15 +564,15 @@ exports.getOrderStats = asyncHandler(async (req, res) => {
     { $group: { _id: "$status", count: { $sum: 1 } } },
   ]);
 
-  // Total revenue (exclude cancelled)
+  // Total revenue (chỉ đơn hàng đã giao)
   const totalRevenue = await Order.aggregate([
-    { $match: { ...matchQuery, status: { $ne: "cancelled" } } },
+    { $match: { ...matchQuery, status: "delivered" } },
     { $group: { _id: null, total: { $sum: "$totalAmount" } } },
   ]);
 
-  // Best selling products
+  // Best selling products (chỉ đơn hàng đã giao)
   const bestSellingProducts = await Order.aggregate([
-    { $match: { ...matchQuery, status: { $ne: "cancelled" } } },
+    { $match: { ...matchQuery, status: "delivered" } },
     { $unwind: "$items" },
     {
       $group: {
