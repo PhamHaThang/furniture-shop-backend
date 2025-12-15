@@ -455,7 +455,14 @@ exports.updateOrderStatus = asyncHandler(async (req, res) => {
       "ORDER_CANCELLED"
     );
   }
-
+  // Không cho cập nhật nếu đã delivered
+  if (order.status === "delivered") {
+    throw new AppError(
+      400,
+      "Không thể cập nhật đơn hàng đã giao",
+      "ORDER_DELIVERED"
+    );
+  }
   // Auto update payment status khi delivered (COD)
   if (status === "delivered" && order.payment.method === "COD") {
     order.payment.status = "completed";
