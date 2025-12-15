@@ -15,6 +15,14 @@ exports.protect = async (req, res, next) => {
           error: "UNAUTHORIZED",
         });
       }
+      // Kiểm tra tài khoản đã bị xóa
+      if (req.user.isDeleted) {
+        return res.status(403).json({
+          success: false,
+          message: "Tài khoản đã bị vô hiệu hóa",
+          error: "ACCOUNT_DELETED",
+        });
+      }
       next();
     } else {
       return res.status(401).json({

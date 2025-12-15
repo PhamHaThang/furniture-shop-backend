@@ -203,9 +203,18 @@ exports.getAllUsers = asyncHandler(async (req, res) => {
     search,
     role,
     sortBy = "-createdAt",
+    deleted = "active",
   } = req.query;
 
   const filter = {};
+
+  // Handle deleted filter
+  if (deleted === "active") {
+    filter.isDeleted = false;
+  } else if (deleted === "deleted") {
+    filter.isDeleted = true;
+  }
+  // If deleted === "all", don't add isDeleted filter
 
   // Search by name or email
   if (search) {
@@ -295,7 +304,8 @@ exports.createUser = asyncHandler(async (req, res) => {
 // [PUT] /api/admin/users/:id
 exports.updateUserById = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { fullName, phone, role, avatar, address, password } = req.body;
+  const { fullName, phone, role, avatar, address, password, isDeleted } =
+    req.body;
   const user = await User.findById(id);
   if (!user) {
     throw new AppError(404, "Người dùng không tồn tại", "USER_NOT_FOUND");
@@ -305,6 +315,7 @@ exports.updateUserById = asyncHandler(async (req, res) => {
   user.role = role || user.role;
   user.avatar = avatar || user.avatar;
   user.address = address || user.address;
+  user.isDeleted = isDeleted !== undefined ? isDeleted : user.isDeleted;
   if (password) {
     if (password.length < 6) {
       throw new AppError(
@@ -337,7 +348,9 @@ exports.deleteUserById = asyncHandler(async (req, res) => {
   if (!user) {
     throw new AppError(404, "Người dùng không tồn tại", "USER_NOT_FOUND");
   }
-  await user.deleteOne();
+  // Soft delete
+  user.isDeleted = true;
+  await user.save();
   res.json({
     success: true,
     message: "Xoá người dùng thành công",
