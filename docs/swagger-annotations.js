@@ -61,7 +61,7 @@
  *   post:
  *     tags: [Authentication]
  *     summary: Đăng nhập
- *     description: Đăng nhập vào hệ thống
+ *     description: Đăng nhập vào hệ thống. Không cho phép đăng nhập nếu tài khoản đã bị xóa (isDeleted=true)
  *     requestBody:
  *       required: true
  *       content:
@@ -96,6 +96,8 @@
  *                   type: string
  *       401:
  *         description: Email hoặc mật khẩu không đúng
+ *       403:
+ *         description: Tài khoản đã bị vô hiệu hóa
  */
 
 /**
@@ -220,6 +222,13 @@
  *           type: string
  *           example: price
  *         description: Sort field (e.g. price, -createdAt)
+ *       - in: query
+ *         name: deleted
+ *         schema:
+ *           type: string
+ *           enum: [active, all, deleted]
+ *           default: active
+ *         description: "L\u1ecdc s\u1ea3n ph\u1ea9m theo tr\u1ea1ng th\u00e1i - active (\u0111ang b\u00e1n), deleted (\u0111\u00e3 x\u00f3a), all (t\u1ea5t c\u1ea3)"
  *     responses:
  *       200:
  *         description: Thành công
@@ -526,8 +535,6 @@
  *       404:
  *         description: Không tìm thấy đơn hàng
  */
-
-
 
 /**
  * @swagger
@@ -1035,38 +1042,6 @@
 
 /**
  * @swagger
- * /orders/{id}/payment:
- *   put:
- *     tags: [Orders]
- *     summary: Xác nhận thanh toán đơn hàng
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               transactionId:
- *                 type: string
- *                 description: Mã giao dịch thanh toán
- *               paymentProof:
- *                 type: string
- *                 description: URL ảnh chứng minh thanh toán
- *     responses:
- *       200:
- *         description: Xác nhận thanh toán thành công
- */
-
-/**
- * @swagger
  * /orders/{id}:
  *   get:
  *     tags: [Orders]
@@ -1440,8 +1415,6 @@
  *         description: Xóa thành công
  */
 
-
-
 /**
  * @swagger
  * /admin/users:
@@ -1468,6 +1441,13 @@
  *         schema:
  *           type: string
  *           enum: [user, admin]
+ *       - in: query
+ *         name: deleted
+ *         schema:
+ *           type: string
+ *           enum: [active, all, deleted]
+ *           default: active
+ *         description: "L\u1ecdc ng\u01b0\u1eddi d\u00f9ng theo tr\u1ea1ng th\u00e1i - active (ho\u1ea1t \u0111\u1ed9ng), deleted (\u0111\u00e3 x\u00f3a), all (t\u1ea5t c\u1ea3)"
  *     responses:
  *       200:
  *         description: Thành công
@@ -1543,12 +1523,16 @@
  *                 type: string
  *               role:
  *                 type: string
+ *               isDeleted:
+ *                 type: boolean
+ *                 description: Tr\u1ea1ng th\u00e1i x\u00f3a m\u1ec1m (d\u00f9ng \u0111\u1ec3 kh\u00f4i ph\u1ee5c)
  *     responses:
  *       200:
  *         description: Cập nhật thành công
  *   delete:
  *     tags: [Admin - Users]
- *     summary: Xóa user (Admin)
+ *     summary: Xóa mềm user (Admin)
+ *     description: Đánh dấu user là isDeleted=true thay vì xóa hẳn
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -1690,12 +1674,17 @@
  *         application/json:
  *           schema:
  *             type: object
+ *             properties:
+ *               isDeleted:
+ *                 type: boolean
+ *                 description: Tr\u1ea1ng th\u00e1i x\u00f3a m\u1ec1m (d\u00f9ng \u0111\u1ec3 kh\u00f4i ph\u1ee5c s\u1ea3n ph\u1ea9m)
  *     responses:
  *       200:
  *         description: Cập nhật thành công
  *   delete:
  *     tags: [Admin - Products]
- *     summary: Xóa sản phẩm (Admin)
+ *     summary: Xóa mềm sản phẩm (Admin)
+ *     description: Đánh dấu sản phẩm là isDeleted=true. Không cho phép xóa nếu sản phẩm có trong đơn hàng đang xử lý (pending/processing/shipped)
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -1707,6 +1696,8 @@
  *     responses:
  *       200:
  *         description: Xóa thành công
+ *       400:
+ *         description: Không thể xóa vì đang có đơn hàng đang xử lý
  */
 
 /**

@@ -38,6 +38,11 @@ const options = {
             phone: { type: "string", example: "0123456789" },
             avatar: { type: "string", example: "https://cloudinary.com/..." },
             role: { type: "string", enum: ["user", "admin"], example: "user" },
+            isDeleted: {
+              type: "boolean",
+              example: false,
+              description: "Tr\u1ea1ng th\u00e1i x\u00f3a m\u1ec1m",
+            },
             address: {
               type: "array",
               items: { $ref: "#/components/schemas/Address" },
@@ -69,6 +74,11 @@ const options = {
             price: { type: "number", example: 5000000 },
             originalPrice: { type: "number", example: 6000000 },
             isFeatured: { type: "boolean", example: false },
+            isDeleted: {
+              type: "boolean",
+              example: false,
+              description: "Tr\u1ea1ng th\u00e1i x\u00f3a m\u1ec1m",
+            },
             images: {
               type: "array",
               items: { type: "string" },
@@ -184,7 +194,7 @@ const options = {
               properties: {
                 method: {
                   type: "string",
-                  enum: ["COD"],
+                  enum: ["COD", "BANK"],
                   example: "COD",
                 },
                 status: {
