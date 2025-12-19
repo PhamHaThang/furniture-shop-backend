@@ -135,9 +135,8 @@ exports.createOrder = asyncHandler(async (req, res) => {
       amount: discountAmount,
     };
   }
-
-  // Tính shippingFee
-  const shippingFee = 30000; // Fixed 30k VND
+  // Tính phí ship
+  const shippingFee = subTotal > 5000000 ? 0 : 30000; // Nếu đơn hàng > 5 triệu thì miễn phí ship
 
   // Tính totalAmount
   const totalAmount = subTotal + shippingFee - discount.amount;
@@ -240,14 +239,6 @@ exports.getOrderById = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const userId = req.user._id;
 
-  const order = await Order.findById(id)
-    .populate("user", "fullName email phone")
-    .populate("items.product", "name slug images");
-
-  if (!order) {
-    throw new AppError(404, "Đơn hàng không tồn tại", "ORDER_NOT_FOUND");
-  }
-
   // Chỉ user sở hữu hoặc admin
   if (
     order.user._id.toString() !== userId.toString() &&
@@ -255,7 +246,13 @@ exports.getOrderById = asyncHandler(async (req, res) => {
   ) {
     throw new AppError(403, "Bạn không có quyền xem đơn hàng này", "FORBIDDEN");
   }
+  const order = await Order.findById(id)
+    .populate("user", "fullName email phone")
+    .populate("items.product", "name slug images");
 
+  if (!order) {
+    throw new AppError(404, "Đơn hàng không tồn tại", "ORDER_NOT_FOUND");
+  }
   res.json({
     success: true,
     message: "Lấy thông tin đơn hàng thành công",

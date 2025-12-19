@@ -26,6 +26,8 @@ exports.register = asyncHandler(async (req, res) => {
       fullName: user.fullName,
       phone: user.phone,
       role: user.role,
+      avatar: user.avatar,
+      address: user.address,
     },
     token: generateToken(user._id),
   });
@@ -76,6 +78,8 @@ exports.login = asyncHandler(async (req, res) => {
       fullName: user.fullName,
       phone: user.phone,
       role: user.role,
+      avatar: user.avatar,
+      address: user.address,
     },
     token: generateToken(user._id),
   });
@@ -114,7 +118,7 @@ exports.forgotPassword = asyncHandler(async (req, res) => {
     const resetUrl = `${
       process.env.FRONTEND_RESET_PASSWORD_URL ||
       "http://localhost:5173/reset-password"
-    }/token=${resetToken}`;
+    }?token=${resetToken}`;
 
     const html = `<!DOCTYPE html>
     <html lang="en">

@@ -12,6 +12,16 @@ exports.getWishlist = asyncHandler(async (req, res) => {
   let wishlist = await Wishlist.findOne({ user: userId }).populate({
     path: "products",
     select: "name slug images price salePrice stock averageRating totalReviews",
+    populate: [
+      {
+        path: "category",
+        select: "name slug",
+      },
+      {
+        path: "brand",
+        select: "name slug",
+      },
+    ],
   });
 
   // Nếu chưa có wishlist, tạo mới
@@ -34,7 +44,6 @@ exports.getWishlist = asyncHandler(async (req, res) => {
 exports.addToWishlist = asyncHandler(async (req, res) => {
   const userId = req.user._id;
   const { productId } = req.params;
-
   // Check product tồn tại
   const product = await Product.findById(productId);
   if (!product) {

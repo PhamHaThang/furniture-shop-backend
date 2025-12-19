@@ -83,6 +83,29 @@ exports.getReviewsByProduct = asyncHandler(async (req, res) => {
 
 // ========== USER ROUTES ==========
 
+// [GET] /api/reviews/my-reviews/products - Lấy danh sách product IDs đã review
+exports.getMyReviewedProducts = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const { productIds } = req.query;
+
+  const query = { user: userId };
+
+  // Nếu có danh sách productIds, chỉ lấy những product đó
+  if (productIds) {
+    const ids = productIds.split(',');
+    query.product = { $in: ids };
+  }
+
+  const reviews = await Review.find(query).select('product');
+  const reviewedProductIds = reviews.map(review => review.product.toString());
+
+  res.json({
+    success: true,
+    message: "Lấy danh sách sản phẩm đã đánh giá thành công",
+    productIds: reviewedProductIds,
+  });
+});
+
 // [POST] /api/reviews - Tạo đánh giá cho sản phẩm
 exports.createReview = asyncHandler(async (req, res) => {
   const userId = req.user._id;

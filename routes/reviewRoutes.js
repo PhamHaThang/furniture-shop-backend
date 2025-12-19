@@ -8,6 +8,8 @@ const reviewController = require("../controllers/reviewController");
 router.get("/product/:productId", reviewController.getReviewsByProduct);
 
 // ========== USER ROUTES ==========
+// [GET] /api/reviews/my-reviews/products - Lấy danh sách product IDs đã review
+router.get("/my-reviews/products", protect, reviewController.getMyReviewedProducts);
 // [POST] /api/reviews - Tạo đánh giá cho sản phẩm
 router.post("/", protect, reviewController.createReview);
 // [PUT] /api/reviews/:id - Cập nhật đánh giá
