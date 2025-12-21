@@ -558,7 +558,7 @@ exports.getOrderStats = asyncHandler(async (req, res) => {
   // Order count by status
   const orderCountByStatus = await Order.aggregate([
     { $match: matchQuery },
-    { $group: { _id: "$status", count: { $sum: 1 } } },
+    { $group: { _id: "$status", count: { $sum: 1 },total: { $sum: "$totalAmount" }, } },
   ]);
 
   // Total revenue (chỉ đơn hàng đã giao)
