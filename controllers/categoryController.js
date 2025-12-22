@@ -9,7 +9,6 @@ const AppError = require("../utils/AppError");
 // [GET] /api/categories - Lấy tất cả danh mục
 exports.getAllCategories = asyncHandler(async (req, res) => {
   const { page, limit, parent } = req.query;
-
   let query = {};
 
   // Lọc theo parent
@@ -41,11 +40,23 @@ exports.getAllCategories = asyncHandler(async (req, res) => {
       },
     });
   }
-
+  if (limit) {
+    const categories = await Category.find(query)
+      .populate("parentCategory", "name slug")
+      .sort({ createdAt: -1 })
+      .limit(Number(limit));
+    return res.json({
+      success: true,
+      message: "Lấy danh sách danh mục thành công",
+      categories,
+      pagination: {
+        limit: Number(limit),
+      },
+    });
+  }
   const categories = await Category.find(query)
     .populate("parentCategory", "name slug")
     .sort({ createdAt: -1 });
-
   res.json({
     success: true,
     message: "Lấy danh sách danh mục thành công",
