@@ -51,16 +51,12 @@ exports.login = asyncHandler(async (req, res) => {
       "INVALID_CREDENTIALS"
     );
   }
-  
+
   // Kiểm tra tài khoản đã bị xóa
   if (user.isDeleted) {
-    throw new AppError(
-      403,
-      "Tài khoản đã bị vô hiệu hóa",
-      "ACCOUNT_DELETED"
-    );
+    throw new AppError(403, "Tài khoản đã bị vô hiệu hóa", "ACCOUNT_DELETED");
   }
-  
+
   const isMatch = await user.matchPassword(password);
   if (!isMatch) {
     throw new AppError(
@@ -94,16 +90,12 @@ exports.forgotPassword = asyncHandler(async (req, res) => {
   if (!user) {
     throw new AppError(404, "Người dùng không tồn tại", "USER_NOT_FOUND");
   }
-  
+
   // Kiểm tra tài khoản đã bị xóa
   if (user.isDeleted) {
-    throw new AppError(
-      403,
-      "Tài khoản đã bị vô hiệu hóa",
-      "ACCOUNT_DELETED"
-    );
+    throw new AppError(403, "Tài khoản đã bị vô hiệu hóa", "ACCOUNT_DELETED");
   }
-  
+
   try {
     const resetToken = crypto.randomBytes(20).toString("hex");
     const hashedToken = crypto
@@ -116,9 +108,8 @@ exports.forgotPassword = asyncHandler(async (req, res) => {
     await user.save({ validateBeforeSave: false });
 
     const resetUrl = `${
-      process.env.FRONTEND_RESET_PASSWORD_URL ||
-      "http://localhost:5173/reset-password"
-    }?token=${resetToken}`;
+      process.env.FRONTEND_URL || "http://localhost:5173"
+    }/reset-password?token=${resetToken}`;
 
     const html = `<!DOCTYPE html>
     <html lang="en">
@@ -387,7 +378,7 @@ exports.resetPassword = asyncHandler(async (req, res) => {
   user.resetPasswordExpire = undefined;
   await user.save();
   const loginUrl =
-    process.env.FRONTEND_LOGIN_URL || "http://localhost:5173/login";
+    process.env.FRONTEND_URL + "/login" || "http://localhost:5173/login";
 
   try {
     const html = `
