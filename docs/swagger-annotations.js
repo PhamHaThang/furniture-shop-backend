@@ -612,7 +612,7 @@
  *               model3D:
  *                 type: string
  *                 format: binary
- *                 description: 3D model file (glb, gltf, obj, fbx - max 50MB)
+ *                 description: 3D model file (glb, gltf, obj, fbx - max 10MB)
  *     responses:
  *       200:
  *         description: Upload thành công

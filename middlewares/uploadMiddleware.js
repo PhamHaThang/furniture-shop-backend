@@ -45,7 +45,7 @@ const uploadImage = multer({
 });
 const uploadModel = multer({
   storage: modelStorage,
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
   fileFilter: (req, file, cb) => {
     const allowedMimeTypes = [
       "model/gltf-binary",
