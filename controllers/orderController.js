@@ -170,12 +170,11 @@ exports.createOrder = asyncHandler(async (req, res) => {
     notes: notes || "",
   });
 
-  // Giảm stock và tăng soldCount
+  // Giảm stock (soldCount sẽ tăng khi đơn hàng delivered)
   for (const item of cart.items) {
     await Product.findByIdAndUpdate(item.product._id, {
       $inc: {
         stock: -item.quantity,
-        soldCount: item.quantity,
       },
     });
   }
@@ -288,12 +287,11 @@ exports.cancelOrder = asyncHandler(async (req, res) => {
     );
   }
 
-  // Hoàn lại stock và giảm soldCount
+  // Hoàn lại stock (không cần giảm soldCount vì chưa tăng)
   for (const item of order.items) {
     await Product.findByIdAndUpdate(item.product, {
       $inc: {
         stock: item.quantity,
-        soldCount: -item.quantity,
       },
     });
   }
@@ -465,6 +463,17 @@ exports.updateOrderStatus = asyncHandler(async (req, res) => {
     order.payment.status = "completed";
   }
 
+  // Tăng soldCount khi đơn hàng delivered
+  if (status === "delivered" && order.status !== "delivered") {
+    for (const item of order.items) {
+      await Product.findByIdAndUpdate(item.product, {
+        $inc: {
+          soldCount: item.quantity,
+        },
+      });
+    }
+  }
+
   order.status = status;
   await order.save();
 
@@ -558,7 +567,13 @@ exports.getOrderStats = asyncHandler(async (req, res) => {
   // Order count by status
   const orderCountByStatus = await Order.aggregate([
     { $match: matchQuery },
-    { $group: { _id: "$status", count: { $sum: 1 },total: { $sum: "$totalAmount" }, } },
+    {
+      $group: {
+        _id: "$status",
+        count: { $sum: 1 },
+        total: { $sum: "$totalAmount" },
+      },
+    },
   ]);
 
   // Total revenue (chỉ đơn hàng đã giao)
