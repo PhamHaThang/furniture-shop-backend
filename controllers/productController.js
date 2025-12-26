@@ -51,11 +51,18 @@ exports.getAllProducts = asyncHandler(async (req, res) => {
     if (priceMin) filter.price.$gte = Number(priceMin);
     if (priceMax) filter.price.$lte = Number(priceMax);
   }
+  const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
   if (search) {
+    const keyword = escapeRegex(search);
     filter.$or = [
-      { name: { $regex: search, $options: "i" } },
-      { description: { $regex: search, $options: "i" } },
+      { name: { $regex: keyword, $options: "i" } },
+      { description: { $regex: keyword, $options: "i" } },
+      { sku: { $regex: keyword, $options: "i" } },
+      { slug: { $regex: keyword, $options: "i" } },
+      { tags: { $elemMatch: { $regex: keyword, $options: "i" } } },
+      { colors: { $elemMatch: { $regex: keyword, $options: "i" } } },
+      { materials: { $elemMatch: { $regex: keyword, $options: "i" } } },
     ];
   }
 
