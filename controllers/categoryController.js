@@ -3,6 +3,7 @@ const asyncHandler = require("express-async-handler");
 const Category = require("../models/Category");
 const Product = require("../models/Product");
 const AppError = require("../utils/AppError");
+const { escapeRegex } = require("../utils/helpter");
 
 // ========== PUBLIC ROUTES ==========
 
@@ -147,7 +148,11 @@ exports.getAllCategoriesAdmin = asyncHandler(async (req, res) => {
 
   // Search by name
   if (search) {
-    query.name = { $regex: search, $options: "i" };
+    const keyword = escapeRegex(search.trim());
+    query.$or = [
+      { name: { $regex: keyword, $options: "i" } },
+      { slug: { $regex: keyword, $options: "i" } },
+    ];
   }
 
   // Filter by parent

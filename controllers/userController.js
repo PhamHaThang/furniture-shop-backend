@@ -1,6 +1,7 @@
 const asyncHandler = require("express-async-handler");
 const User = require("../models/User");
 const AppError = require("../utils/AppError");
+const { escapeRegex } = require("../utils/helpter");
 
 // ========== USER PROFILE ROUTES ==========
 // [GET] /api/users/me
@@ -216,12 +217,13 @@ exports.getAllUsers = asyncHandler(async (req, res) => {
   }
   // If deleted === "all", don't add isDeleted filter
 
-  // Search by name or email
+  // Search by name or email or phone
   if (search) {
+    const keyword = escapeRegex(search.trim());
     filter.$or = [
-      { fullName: { $regex: search, $options: "i" } },
-      { email: { $regex: search, $options: "i" } },
-      { phone: { $regex: search, $options: "i" } },
+      { fullName: { $regex: keyword, $options: "i" } },
+      { email: { $regex: keyword, $options: "i" } },
+      { phone: { $regex: keyword, $options: "i" } },
     ];
   }
 

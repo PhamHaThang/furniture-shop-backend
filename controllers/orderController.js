@@ -5,6 +5,7 @@ const Cart = require("../models/Cart");
 const Product = require("../models/Product");
 const Promotion = require("../models/Promotion");
 const { generateOrderCode } = require("../utils/generateOrderCode");
+const { escapeRegex } = require("../utils/helpter");
 
 // ========== ORDER ROUTES ==========
 
@@ -359,10 +360,11 @@ exports.getAllOrders = asyncHandler(async (req, res) => {
 
   // Search by code, user info
   if (search) {
+    const keyword = escapeRegex(search.trim());
     query.$or = [
-      { code: { $regex: search, $options: "i" } },
-      { "shippingAddress.fullName": { $regex: search, $options: "i" } },
-      { "shippingAddress.phone": { $regex: search, $options: "i" } },
+      { code: { $regex: keyword, $options: "i" } },
+      { "shippingAddress.fullName": { $regex: keyword, $options: "i" } },
+      { "shippingAddress.phone": { $regex: keyword, $options: "i" } },
     ];
   }
 

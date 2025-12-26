@@ -3,6 +3,7 @@ const Product = require("../models/Product");
 const Category = require("../models/Category");
 const Order = require("../models/Order");
 const AppError = require("../utils/AppError");
+const { escapeRegex } = require("../utils/helpter");
 
 // ========== PUBLIC ROUTES ==========
 // [GET] /api/products?category=id&brand=id&minPrice=&maxPrice=&search=&page=&limit=&sort=&deleted=
@@ -51,8 +52,6 @@ exports.getAllProducts = asyncHandler(async (req, res) => {
     if (priceMin) filter.price.$gte = Number(priceMin);
     if (priceMax) filter.price.$lte = Number(priceMax);
   }
-  const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
   if (search) {
     const keyword = escapeRegex(search);
     filter.$or = [

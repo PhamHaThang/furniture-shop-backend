@@ -2,6 +2,7 @@ const asyncHandler = require("express-async-handler");
 const Brand = require("../models/Brand");
 const Product = require("../models/Product");
 const AppError = require("../utils/AppError");
+const { escapeRegex } = require("../utils/helpter");
 
 // ========== PUBLIC ROUTES ==========
 
@@ -11,9 +12,13 @@ exports.getAllBrands = asyncHandler(async (req, res) => {
 
   let query = {};
 
-  // Search by name
+  // Search by name or slug
   if (search) {
-    query.name = { $regex: search, $options: "i" };
+    const keyword = escapeRegex(search.trim());
+    query.$or = [
+      { name: { $regex: keyword, $options: "i" } },
+      { slug: { $regex: keyword, $options: "i" } },
+    ];
   }
   // Pagination
   if (page && limit) {
@@ -136,9 +141,13 @@ exports.getAllBrandsAdmin = asyncHandler(async (req, res) => {
 
   let query = {};
 
-  // Search by name
+  // Search by name or slug
   if (search) {
-    query.name = { $regex: search, $options: "i" };
+    const keyword = escapeRegex(search.trim());
+    query.$or = [
+      { name: { $regex: keyword, $options: "i" } },
+      { slug: { $regex: keyword, $options: "i" } },
+    ];
   }
 
   // Pagination

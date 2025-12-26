@@ -4,6 +4,8 @@ const Product = require("../models/Product");
 const Order = require("../models/Order");
 const AppError = require("../utils/AppError");
 const mongoose = require("mongoose");
+const User = require("../models/User");
+const { escapeRegex } = require("../utils/helpter");
 // Helper function: Cập nhật rating của product
 const updateProductRating = async (productId) => {
   const reviews = await Review.find({ product: productId });
@@ -92,12 +94,12 @@ exports.getMyReviewedProducts = asyncHandler(async (req, res) => {
 
   // Nếu có danh sách productIds, chỉ lấy những product đó
   if (productIds) {
-    const ids = productIds.split(',');
+    const ids = productIds.split(",");
     query.product = { $in: ids };
   }
 
-  const reviews = await Review.find(query).select('product');
-  const reviewedProductIds = reviews.map(review => review.product.toString());
+  const reviews = await Review.find(query).select("product");
+  const reviewedProductIds = reviews.map((review) => review.product.toString());
 
   res.json({
     success: true,
@@ -290,10 +292,30 @@ exports.getAllReviews = asyncHandler(async (req, res) => {
   }
 
   // Search in comment
-  if (search) {
-    query.comment = { $regex: search, $options: "i" };
-  }
+  const keyword = escapeRegex(search);
 
+  const users = await User.find({
+    $or: [
+      { fullName: { $regex: keyword, $options: "i" } },
+      { email: { $regex: keyword, $options: "i" } },
+    ],
+  }).select("_id");
+
+  const products = await Product.find({
+    name: { $regex: keyword, $options: "i" },
+  }).select("_id");
+
+  query.$or = [
+    { comment: { $regex: keyword, $options: "i" } },
+    { user: { $in: users.map((u) => u._id) } },
+    { product: { $in: products.map((p) => p._id) } },
+  ];
+  // Validate sortBy
+  const allowedSort = ["createdAt", "rating"];
+  const sortField = sortBy.replace("-", "");
+  if (!allowedSort.includes(sortField)) {
+    sortBy = "-createdAt";
+  }
   const skip = (Number(page) - 1) * Number(limit);
 
   const reviews = await Review.find(query)
