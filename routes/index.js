@@ -11,7 +11,7 @@ const reviewRoutes = require("./reviewRoutes");
 const promotionRoutes = require("./promotionRoutes");
 const wishlistRoutes = require("./wishlistRoutes");
 const uploadRoutes = require("./uploadRoutes");
-
+const recommendationRoutes = require("./recommendationRoutes");
 const adminRoutes = require("./adminRoutes");
 
 router.use("/auth", authRoutes);
@@ -25,7 +25,7 @@ router.use("/reviews", reviewRoutes);
 router.use("/promotions", promotionRoutes);
 router.use("/wishlist", wishlistRoutes);
 router.use("/upload", uploadRoutes);
-
+router.use("/recommendations", recommendationRoutes);
 router.use("/admin", adminRoutes);
 
 module.exports = router;

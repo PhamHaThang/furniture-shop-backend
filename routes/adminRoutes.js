@@ -8,62 +8,62 @@ const orderController = require("../controllers/orderController");
 const reviewController = require("../controllers/reviewController");
 const promotionController = require("../controllers/promotionController");
 const { protect, requireRole } = require("../middlewares/authMiddleware");
-
+const recommendationController = require("../controllers/recommendationController");
 router.use(protect, requireRole("admin"));
 
 // ========== USER MANAGEMENT ==========
 // [GET, POST] /api/admin/users - Lấy tất cả người dùng và tạo người dùng mới
 router
-  .route("/users")
-  .get(userController.getAllUsers)
-  .post(userController.createUser);
+    .route("/users")
+    .get(userController.getAllUsers)
+    .post(userController.createUser);
 
 // [GET, PUT, DELETE] /api/admin/users/:id - Lấy, cập nhật và xóa người dùng theo ID
 router
-  .route("/users/:id")
-  .get(userController.getUserById)
-  .put(userController.updateUserById)
-  .delete(userController.deleteUserById);
+    .route("/users/:id")
+    .get(userController.getUserById)
+    .put(userController.updateUserById)
+    .delete(userController.deleteUserById);
 
 // ========== PRODUCT MANAGEMENT ==========
 // [GET, POST] /api/admin/products - Lấy tất cả sản phẩm và tạo sản phẩm mới
 router
-  .route("/products")
-  .get(productController.getAllProducts)
-  .post(productController.createProduct);
+    .route("/products")
+    .get(productController.getAllProducts)
+    .post(productController.createProduct);
 
 // [GET, PUT, DELETE] /api/admin/products/:id - Lấy, cập nhật và xóa sản phẩm theo ID
 router
-  .route("/products/:id")
-  .get(productController.getProductById)
-  .put(productController.updateProduct)
-  .delete(productController.deleteProduct);
+    .route("/products/:id")
+    .get(productController.getProductById)
+    .put(productController.updateProduct)
+    .delete(productController.deleteProduct);
 
 // ========== CATEGORY MANAGEMENT ==========
 // [GET, POST] /api/admin/categories - Lấy tất cả danh mục và tạo danh mục mới
 router
-  .route("/categories")
-  .get(categoryController.getAllCategoriesAdmin)
-  .post(categoryController.createCategory);
+    .route("/categories")
+    .get(categoryController.getAllCategoriesAdmin)
+    .post(categoryController.createCategory);
 
 // [PUT, DELETE] /api/admin/categories/:id - Cập nhật và xóa danh mục theo ID
 router
-  .route("/categories/:id")
-  .put(categoryController.updateCategoryById)
-  .delete(categoryController.deleteCategoryById);
+    .route("/categories/:id")
+    .put(categoryController.updateCategoryById)
+    .delete(categoryController.deleteCategoryById);
 
 // ========== BRAND MANAGEMENT ==========
 // [GET, POST] /api/admin/brands - Lấy tất cả thương hiệu và tạo thương hiệu mới
 router
-  .route("/brands")
-  .get(brandController.getAllBrandsAdmin)
-  .post(brandController.createBrand);
+    .route("/brands")
+    .get(brandController.getAllBrandsAdmin)
+    .post(brandController.createBrand);
 
 // [PUT, DELETE] /api/admin/brands/:id - Cập nhật và xóa thương hiệu theo ID
 router
-  .route("/brands/:id")
-  .put(brandController.updateBrand)
-  .delete(brandController.deleteBrand);
+    .route("/brands/:id")
+    .put(brandController.updateBrand)
+    .delete(brandController.deleteBrand);
 
 // ========== ORDER MANAGEMENT ==========
 // [GET] /api/admin/orders - Lấy danh sách tất cả đơn hàng
@@ -74,9 +74,9 @@ router.get("/orders/stats", orderController.getOrderStats);
 
 // [GET, DELETE] /api/admin/orders/:id - Lấy chi tiết và xóa đơn hàng theo ID
 router
-  .route("/orders/:id")
-  .get(orderController.getOrderByIdAdmin)
-  .delete(orderController.deleteOrder);
+    .route("/orders/:id")
+    .get(orderController.getOrderByIdAdmin)
+    .delete(orderController.deleteOrder);
 
 // [PUT] /api/admin/orders/:id/status - Cập nhật trạng thái đơn hàng
 router.put("/orders/:id/status", orderController.updateOrderStatus);
@@ -93,15 +93,25 @@ router.delete("/reviews/:id", reviewController.adminDeleteReview);
 // ========== PROMOTION MANAGEMENT ==========
 // [GET, POST] /api/admin/promotions - Lấy tất cả khuyến mãi và tạo khuyến mãi mới
 router
-  .route("/promotions")
-  .get(promotionController.getAllPromotionsAdmin)
-  .post(promotionController.createPromotion);
+    .route("/promotions")
+    .get(promotionController.getAllPromotionsAdmin)
+    .post(promotionController.createPromotion);
 
 // [GET, PUT, DELETE] /api/admin/promotions/:id - Lấy, cập nhật và xóa khuyến mãi theo ID
 router
-  .route("/promotions/:id")
-  .get(promotionController.getPromotionByIdAdmin)
-  .put(promotionController.updatePromotion)
-  .delete(promotionController.deletePromotion);
+    .route("/promotions/:id")
+    .get(promotionController.getPromotionByIdAdmin)
+    .put(promotionController.updatePromotion)
+    .delete(promotionController.deletePromotion);
 
+// ========== ML ANALYTICS ==========
+// [GET] /api/admin/ml/sentiment - Sentiment Good/Bad cho reviews
+router.get(
+    "/ml/sentiment",
+    recommendationController.getReviewSentimentAnalytics,
+);
+// [GET] /api/admin/ml/clusters?clusterType=products|users&clusters=4
+router.get("/ml/clusters", recommendationController.getKMeansClusters);
+// [GET] /api/admin/ml/dashboard - Tong hop analytics ML
+router.get("/ml/dashboard", recommendationController.getAdminMLDashboard);
 module.exports = router;
