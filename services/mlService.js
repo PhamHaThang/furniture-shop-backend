@@ -5,7 +5,7 @@ const ML_SERVICE_URL =
 
 const mlApi = axios.create({
     baseURL: ML_SERVICE_URL,
-    timeout: 5000,
+    timeout: 10000,
     headers: {
         "Content-Type": "application/json",
     },

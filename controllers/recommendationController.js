@@ -5,6 +5,7 @@ const {
     callMLService,
     checkMLServiceHealth,
 } = require("../services/mlService");
+
 const {
     buildMLRequest,
     formatRecommendations,
@@ -24,6 +25,9 @@ exports.getContentBasedForMe = asyncHandler(async (req, res) => {
     const request = await buildMLRequest({
         targetUserId: req.user._id.toString(),
         topK,
+        includeProducts: true,
+        includeReviews: true,
+        includeOrders: true,
     });
 
     const result = await callMLService("/recommend/content-based", request);
@@ -45,6 +49,8 @@ exports.getCollaborativeForMe = asyncHandler(async (req, res) => {
     const request = await buildMLRequest({
         targetUserId: req.user._id.toString(),
         topK,
+        includeReviews: true,
+        includeOrders: true,
     });
 
     const result = await callMLService("/recommend/collaborative", request);
@@ -66,6 +72,9 @@ exports.getHybridForMe = asyncHandler(async (req, res) => {
     const request = await buildMLRequest({
         targetUserId: req.user._id.toString(),
         topK,
+        includeProducts: true,
+        includeReviews: true,
+        includeOrders: true,
     });
 
     const result = await callMLService("/recommend/hybrid", request);
@@ -95,6 +104,7 @@ exports.getSimilarByProduct = asyncHandler(async (req, res) => {
     const request = await buildMLRequest({
         targetProductId: productId,
         topK,
+        includeProducts: true,
     });
 
     const result = await callMLService("/recommend/content-based", request);
@@ -115,6 +125,7 @@ exports.getReviewSentimentAnalytics = asyncHandler(async (req, res) => {
     const request = await buildMLRequest({
         startDate,
         endDate,
+        includeReviews: true,
     });
     const result = await callMLService("/sentiment/reviews", request);
 
@@ -131,10 +142,13 @@ exports.getKMeansClusters = asyncHandler(async (req, res) => {
     const clusters = Number(req.query.clusters) || 4;
     const { startDate, endDate } = req.query;
 
-    const request = await buildMLPayload({
+    const request = await buildMLRequest({
         clusters,
         startDate,
         endDate,
+        includeProducts: clusterType === "products",
+        includeReviews: clusterType === "users",
+        includeOrders: clusterType === "users",
     });
     const result = await callMLService("/cluster/kmeans", request, {
         cluster_type: clusterType,
@@ -150,10 +164,13 @@ exports.getKMeansClusters = asyncHandler(async (req, res) => {
 exports.getAdminMLDashboard = asyncHandler(async (req, res) => {
     const clusters = Number(req.query.clusters) || 4;
     const { startDate, endDate } = req.query;
-    const request = await buildMLPayload({
+    const request = await buildMLRequest({
         clusters,
         startDate,
         endDate,
+        includeProducts: true,
+        includeReviews: true,
+        includeOrders: true,
     });
     const result = await callMLService("/analytics/admin", request);
 

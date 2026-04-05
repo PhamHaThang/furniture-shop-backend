@@ -2,7 +2,16 @@ const Product = require("../models/Product");
 const Review = require("../models/Review");
 const Order = require("../models/Order");
 const User = require("../models/User");
-
+const toPositiveInt = (value, fallback) => {
+    const parsed = Number(value);
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+};
+const ML_LIMITS = {
+    users: toPositiveInt(process.env.ML_MAX_USERS, 1500),
+    products: toPositiveInt(process.env.ML_MAX_PRODUCTS, 3000),
+    reviews: toPositiveInt(process.env.ML_MAX_REVIEWS, 4000),
+    orders: toPositiveInt(process.env.ML_MAX_ORDERS, 4000),
+};
 const builDateRangeFilter = ({ startDate, endDate }) => {
     const createdAt = {};
     if (startDate) {
@@ -26,22 +35,49 @@ const buildMLRequest = async ({
     clusters,
     startDate,
     endDate,
+    includeUsers = false,
+    includeProducts = false,
+    includeReviews = false,
+    includeOrders = false,
+    usersLimit = ML_LIMITS.users,
+    productsLimit = ML_LIMITS.products,
+    reviewsLimit = ML_LIMITS.reviews,
+    ordersLimit = ML_LIMITS.orders,
 }) => {
     const dateRangeFilter = builDateRangeFilter({ startDate, endDate });
     const [users, products, reviews, orders] = await Promise.all([
-        User.find({ isDeleted: false })
-            .select("_id fullName role createdAt")
-            .lean(),
-        Product.find({ isDeleted: false })
-            .populate("category", "name")
-            .populate("brand", "name")
-            .lean(),
-        Review.find({ ...dateRangeFilter })
-            .select("_id user product rating comment createdAt")
-            .lean(),
-        Order.find({ status: { $ne: "cancelled" }, ...dateRangeFilter })
-            .select("_id user items totalAmount status createdAt")
-            .lean(),
+        includeUsers
+            ? User.find({ isDeleted: false })
+                  .select("_id fullName role createdAt")
+                  .sort({ createdAt: -1 })
+                  .limit(usersLimit)
+                  .lean()
+            : [],
+        includeProducts
+            ? Product.find({ isDeleted: false })
+                  .select(
+                      "_id name description price averageRating totalReviews soldCount stock images model3DUrl tags colors materials category brand",
+                  )
+                  .populate("category", "name")
+                  .populate("brand", "name")
+                  .sort({ createdAt: -1 })
+                  .limit(productsLimit)
+                  .lean()
+            : [],
+        includeReviews
+            ? Review.find({ ...dateRangeFilter })
+                  .select("_id user product rating comment createdAt")
+                  .sort({ createdAt: -1 })
+                  .limit(reviewsLimit)
+                  .lean()
+            : [],
+        includeOrders
+            ? Order.find({ status: { $ne: "cancelled" }, ...dateRangeFilter })
+                  .select("_id user items totalAmount status payment createdAt")
+                  .sort({ createdAt: -1 })
+                  .limit(ordersLimit)
+                  .lean()
+            : [],
     ]);
     return {
         users,
