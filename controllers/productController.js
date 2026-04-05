@@ -3,19 +3,11 @@ const Product = require("../models/Product");
 const Category = require("../models/Category");
 const Order = require("../models/Order");
 const AppError = require("../utils/AppError");
-const { escapeRegex } = require("../utils/helpter");
-
-const normalizeModel3DUrl = (value) => {
-    if (value === undefined) return undefined;
-    if (value === null) return null;
-
-    if (typeof value === "string") {
-        const trimmed = value.trim();
-        return trimmed ? trimmed : null;
-    }
-
-    return value;
-};
+const {
+    escapeRegex,
+    buildRegexSearchFilter,
+    normalizeModel3DUrl,
+} = require("../utils/helpter");
 
 // ========== PUBLIC ROUTES ==========
 // [GET] /api/products?category=id&brand=id&minPrice=&maxPrice=&search=&page=&limit=&sort=&deleted=
@@ -32,8 +24,10 @@ exports.getAllProducts = asyncHandler(async (req, res) => {
         limit = 10,
         deleted = "active", // active | all | deleted
     } = req.query;
-
+    const pageNum = Number(page) || 1;
+    const limitNum = Number(limit) || 10;
     const filter = {};
+    let categoryIds = [];
 
     // Handle deleted filter
     if (deleted === "active") {
@@ -48,13 +42,11 @@ exports.getAllProducts = asyncHandler(async (req, res) => {
             parentCategory: category,
         }).select("_id");
         if (subcategories.length > 0) {
-            const categoryIds = [
-                category,
-                ...subcategories.map((sub) => sub._id),
-            ];
+            categoryIds = [category, ...subcategories.map((sub) => sub._id)];
             filter.category = { $in: categoryIds };
         } else {
             filter.category = category;
+            categoryIds = [category];
         }
     }
 
@@ -67,18 +59,7 @@ exports.getAllProducts = asyncHandler(async (req, res) => {
         if (priceMin) filter.price.$gte = Number(priceMin);
         if (priceMax) filter.price.$lte = Number(priceMax);
     }
-    if (search) {
-        const keyword = escapeRegex(search);
-        filter.$or = [
-            { name: { $regex: keyword, $options: "i" } },
-            { description: { $regex: keyword, $options: "i" } },
-            { sku: { $regex: keyword, $options: "i" } },
-            { slug: { $regex: keyword, $options: "i" } },
-            { tags: { $elemMatch: { $regex: keyword, $options: "i" } } },
-            { colors: { $elemMatch: { $regex: keyword, $options: "i" } } },
-            { materials: { $elemMatch: { $regex: keyword, $options: "i" } } },
-        ];
-    }
+    const trimmedSearch = search ? search.trim() : "";
 
     // Sorting
     let sortOption = { createdAt: -1 }; // newest
@@ -109,13 +90,24 @@ exports.getAllProducts = asyncHandler(async (req, res) => {
                 sortOption = { createdAt: -1 };
         }
     }
-
-    const skip = (Number(page) - 1) * Number(limit);
+    if (trimmedSearch) {
+        const keyword = escapeRegex(trimmedSearch);
+        filter.$or = [
+            { name: { $regex: keyword, $options: "i" } },
+            { description: { $regex: keyword, $options: "i" } },
+            { sku: { $regex: keyword, $options: "i" } },
+            { slug: { $regex: keyword, $options: "i" } },
+            { tags: { $elemMatch: { $regex: keyword, $options: "i" } } },
+            { colors: { $elemMatch: { $regex: keyword, $options: "i" } } },
+            { materials: { $elemMatch: { $regex: keyword, $options: "i" } } },
+        ];
+    }
+    const skip = (pageNum - 1) * limitNum;
     const products = await Product.find(filter)
         .populate("category", "name slug")
         .populate("brand", "name slug")
         .skip(skip)
-        .limit(Number(limit))
+        .limit(limitNum)
         .sort(sortOption);
 
     const total = await Product.countDocuments(filter);
@@ -124,11 +116,212 @@ exports.getAllProducts = asyncHandler(async (req, res) => {
         message: "Lấy danh sách sản phẩm thành công",
         products,
         pagination: {
-            page: Number(page),
-            limit: Number(limit),
+            page: pageNum,
+            limit: limitNum,
             total,
-            totalPages: Math.ceil(total / Number(limit)),
+            totalPages: Math.ceil(total / limitNum),
         },
+    });
+});
+// [GET] /api/products/search?q=keyword&page=&limit=&sort=
+exports.searchProducts = asyncHandler(async (req, res) => {
+    const {
+        q = "",
+        page = 1,
+        limit = 10,
+        sort = "relevance", // relevance | newest | price-asc | price-desc
+        category,
+        brand,
+        minPrice,
+        maxPrice,
+    } = req.query;
+
+    const keyword = q.trim();
+    const pageNum = Math.max(1, Number(page) || 1);
+    const limitNum = Math.max(1, Number(limit) || 10);
+    const skip = (pageNum - 1) * limitNum;
+
+    if (!keyword) {
+        return res.json({
+            success: true,
+            message: "Từ khóa tìm kiếm rỗng",
+            products: [],
+            pagination: {
+                page: pageNum,
+                limit: limitNum,
+                total: 0,
+                totalPages: 0,
+            },
+        });
+    }
+
+    let categoryIds = [];
+    if (category) {
+        const subcategories = await Category.find({
+            parentCategory: category,
+        }).select("_id");
+
+        if (subcategories.length > 0) {
+            categoryIds = [category, ...subcategories.map((sub) => sub._id)];
+        } else {
+            categoryIds = [category];
+        }
+    }
+
+    const fallbackBaseFilter = {
+        isDeleted: false,
+    };
+
+    if (categoryIds.length > 0) {
+        fallbackBaseFilter.category = { $in: categoryIds };
+    }
+
+    if (brand) {
+        fallbackBaseFilter.brand = brand;
+    }
+
+    if (minPrice || maxPrice) {
+        fallbackBaseFilter.price = {};
+        if (minPrice) fallbackBaseFilter.price.$gte = Number(minPrice);
+        if (maxPrice) fallbackBaseFilter.price.$lte = Number(maxPrice);
+    }
+
+    const textFilter = {
+        ...fallbackBaseFilter,
+        $text: { $search: keyword },
+    };
+
+    let sortOption;
+    switch (sort) {
+        case "newest":
+            sortOption = { createdAt: -1 };
+            break;
+        case "price-asc":
+            sortOption = { price: 1 };
+            break;
+        case "price-desc":
+            sortOption = { price: -1 };
+            break;
+        case "relevance":
+        default:
+            sortOption = {
+                score: { $meta: "textScore" },
+                soldCount: -1,
+                averageRating: -1,
+                createdAt: -1,
+            };
+            break;
+    }
+
+    const [textProducts, textTotal] = await Promise.all([
+        Product.find(textFilter)
+            .populate("category", "name slug")
+            .populate("brand", "name slug")
+            .sort(sortOption)
+            .skip(skip)
+            .limit(limitNum),
+        Product.countDocuments(textFilter),
+    ]);
+
+    if (textTotal === 0) {
+        const regexFilter = {
+            ...fallbackBaseFilter,
+            ...buildRegexSearchFilter(keyword),
+        };
+
+        const [products, total] = await Promise.all([
+            Product.find(regexFilter)
+                .populate("category", "name slug")
+                .populate("brand", "name slug")
+                .sort({ soldCount: -1, averageRating: -1, createdAt: -1 })
+                .skip(skip)
+                .limit(limitNum),
+            Product.countDocuments(regexFilter),
+        ]);
+
+        return res.json({
+            success: true,
+            message: "Tìm kiếm sản phẩm thành công",
+            products,
+            pagination: {
+                page: pageNum,
+                limit: limitNum,
+                total,
+                totalPages: total > 0 ? Math.ceil(total / limitNum) : 0,
+            },
+        });
+    }
+
+    res.json({
+        success: true,
+        message: "Tìm kiếm sản phẩm thành công",
+        products: textProducts,
+        pagination: {
+            page: pageNum,
+            limit: limitNum,
+            total: textTotal,
+            totalPages: Math.ceil(textTotal / limitNum),
+        },
+    });
+});
+// [GET] /api/products/suggestions?q=keyword&limit=
+exports.getSearchSuggestions = asyncHandler(async (req, res) => {
+    const { q = "", limit = 8 } = req.query;
+    const keyword = q.trim();
+    const limitNum = Math.min(20, Math.max(1, Number(limit) || 8));
+
+    if (keyword.length < 2) {
+        return res.json({
+            success: true,
+            message: "Từ khóa quá ngắn",
+            suggestions: [],
+        });
+    }
+
+    const escaped = escapeRegex(keyword);
+    const startsWithRegex = new RegExp(`^${escaped}`, "i");
+    const containsRegex = new RegExp(escaped, "i");
+
+    const prefixMatches = await Product.find({
+        isDeleted: false,
+        $or: [
+            { name: startsWithRegex },
+            { slug: startsWithRegex },
+            { sku: startsWithRegex },
+            { tags: startsWithRegex },
+        ],
+    })
+        .select("name slug price images")
+        .sort({ soldCount: -1, averageRating: -1 })
+        .limit(limitNum);
+
+    let suggestions = prefixMatches;
+
+    if (prefixMatches.length < limitNum) {
+        const usedIds = prefixMatches.map((item) => item._id);
+        const remain = limitNum - prefixMatches.length;
+
+        const containsMatches = await Product.find({
+            _id: { $nin: usedIds },
+            isDeleted: false,
+            $or: [
+                { name: containsRegex },
+                { slug: containsRegex },
+                { sku: containsRegex },
+                { tags: containsRegex },
+            ],
+        })
+            .select("name slug price images")
+            .sort({ soldCount: -1, averageRating: -1 })
+            .limit(remain);
+
+        suggestions = [...prefixMatches, ...containsMatches];
+    }
+
+    res.json({
+        success: true,
+        message: "Lấy gợi ý tìm kiếm thành công",
+        suggestions,
     });
 });
 // [GET] /api/products/:slug

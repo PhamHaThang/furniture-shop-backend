@@ -19,7 +19,12 @@ router.get("/best-sellers", productController.getBestSellers);
 // GET /api/products/related/:productId - Sản phẩm liên quan
 router.get("/related/:productId", productController.getRelatedProducts);
 
+// GET /api/products/search - Tìm kiếm sản phẩm theo relevance
+router.get("/search", productController.searchProducts);
+
+// GET /api/products/suggestions - Gợi ý tìm kiếm realtime
+router.get("/suggestions", productController.getSearchSuggestions);
+
 // GET /api/products/:slug - Lấy sản phẩm theo slug
 router.get("/:slug", productController.getProductBySlug);
-
 module.exports = router;

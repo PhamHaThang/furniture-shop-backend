@@ -2,115 +2,139 @@ const mongoose = require("mongoose");
 const slugify = require("slugify");
 
 const productSchema = new mongoose.Schema(
-  {
-    name: {
-      type: String,
-      required: [true, "Tên sản phẩm là bắt buộc"],
-      trim: true,
-      index: true,
+    {
+        name: {
+            type: String,
+            required: [true, "Tên sản phẩm là bắt buộc"],
+            trim: true,
+            index: true,
+        },
+        slug: {
+            type: String,
+            unique: true,
+            index: true,
+        },
+        sku: {
+            type: String,
+            unique: true,
+            required: [true, "SKU là bắt buộc"],
+        }, // Stock Keeping Unit,
+        description: {
+            type: String,
+            required: [true, "Mô tả sản phẩm là bắt buộc"],
+        },
+        price: {
+            type: Number,
+            required: [true, "Giá sản phẩm là bắt buộc"],
+            min: [0, "Giá sản phẩm không được âm"],
+        },
+        originalPrice: {
+            type: Number,
+            min: [0, "Giá gốc không được âm"],
+        },
+        category: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Category",
+            required: [true, "Danh mục sản phẩm là bắt buộc"],
+            index: true,
+        },
+        brand: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Brand",
+            index: true,
+        },
+        stock: {
+            type: Number,
+            required: [true, "Số lượng trong kho là bắt buộc"],
+            min: [0, "Số lượng trong kho không được âm"],
+            default: 0,
+        },
+        images: [
+            {
+                type: String,
+            },
+        ],
+        model3DUrl: {
+            type: String,
+        },
+        dimensions: {
+            width: Number,
+            height: Number,
+            length: Number,
+        },
+        colors: [String],
+        materials: [String],
+        tags: [
+            {
+                type: String,
+                index: true,
+            },
+        ],
+        averageRating: {
+            type: Number,
+            default: 0,
+            min: 0,
+            max: 5,
+        },
+        totalReviews: {
+            type: Number,
+            default: 0,
+            min: 0,
+        },
+        soldCount: {
+            type: Number,
+            default: 0,
+            min: 0,
+        },
+        isFeatured: {
+            type: Boolean,
+            default: false,
+        },
+        isDeleted: {
+            type: Boolean,
+            default: false,
+            index: true,
+        },
     },
-    slug: {
-      type: String,
-      unique: true,
-      index: true,
+    {
+        timestamps: true,
     },
-    sku: {
-      type: String,
-      unique: true,
-      required: [true, "SKU là bắt buộc"],
-    }, // Stock Keeping Unit,
-    description: {
-      type: String,
-      required: [true, "Mô tả sản phẩm là bắt buộc"],
+);
+productSchema.index(
+    {
+        name: "text",
+        description: "text",
+        sku: "text",
+        slug: "text",
+        tags: "text",
+        colors: "text",
+        materials: "text",
     },
-    price: {
-      type: Number,
-      required: [true, "Giá sản phẩm là bắt buộc"],
-      min: [0, "Giá sản phẩm không được âm"],
+    {
+        name: "product_text_search_idx",
+        default_language: "none",
+        weights: {
+            name: 12,
+            sku: 10,
+            slug: 8,
+            tags: 6,
+            description: 4,
+            colors: 2,
+            materials: 2,
+        },
     },
-    originalPrice: {
-      type: Number,
-      min: [0, "Giá gốc không được âm"],
-    },
-    category: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Category",
-      required: [true, "Danh mục sản phẩm là bắt buộc"],
-      index: true,
-    },
-    brand: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Brand",
-      index: true,
-    },
-    stock: {
-      type: Number,
-      required: [true, "Số lượng trong kho là bắt buộc"],
-      min: [0, "Số lượng trong kho không được âm"],
-      default: 0,
-    },
-    images: [
-      {
-        type: String,
-      },
-    ],
-    model3DUrl: {
-      type: String,
-    },
-    dimensions: {
-      width: Number,
-      height: Number,
-      length: Number,
-    },
-    colors: [String],
-    materials: [String],
-    tags: [
-      {
-        type: String,
-        index: true,
-      },
-    ],
-    averageRating: {
-      type: Number,
-      default: 0,
-      min: 0,
-      max: 5,
-    },
-    totalReviews: {
-      type: Number,
-      default: 0,
-      min: 0,
-    },
-    soldCount: {
-      type: Number,
-      default: 0,
-      min: 0,
-    },
-    isFeatured: {
-      type: Boolean,
-      default: false,
-    },
-    isDeleted: {
-      type: Boolean,
-      default: false,
-      index: true,
-    },
-  },
-  {
-    timestamps: true,
-  }
 );
 // Tạo slug tự động trước khi lưu
 productSchema.pre("save", async function (next) {
-  if (this.isModified("name")) {
-    let baseSlug = slugify(this.name, { lower: true, strict: true });
-    let slug = baseSlug;
-    let counter = 1;
-    while (await mongoose.models.Product.findOne({ slug })) {
-      slug = `${baseSlug}-${counter++}`;
+    if (this.isModified("name")) {
+        let baseSlug = slugify(this.name, { lower: true, strict: true });
+        let slug = baseSlug;
+        let counter = 1;
+        while (await mongoose.models.Product.findOne({ slug })) {
+            slug = `${baseSlug}-${counter++}`;
+        }
+        this.slug = slug;
     }
-    this.slug = slug;
-  }
-  next();
+    next();
 });
 module.exports = mongoose.model("Product", productSchema);
