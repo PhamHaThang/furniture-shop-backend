@@ -49,6 +49,7 @@ exports.getCollaborativeForMe = asyncHandler(async (req, res) => {
     const request = await buildMLRequest({
         targetUserId: req.user._id.toString(),
         topK,
+        includeProducts: true,
         includeReviews: true,
         includeOrders: true,
     });

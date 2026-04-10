@@ -27,6 +27,7 @@ const builDateRangeFilter = ({ startDate, endDate }) => {
         }
         return Object.keys(createdAt).length > 0 ? { createdAt } : {};
     }
+    return createdAt;
 };
 const buildMLRequest = async ({
     targetUserId,

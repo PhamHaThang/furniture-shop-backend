@@ -328,15 +328,13 @@ exports.getAllReviews = asyncHandler(async (req, res) => {
     // Validate sortBy
     const allowedSort = ["createdAt", "rating"];
     const sortField = sortBy.replace("-", "");
-    if (!allowedSort.includes(sortField)) {
-        sortBy = "-createdAt";
-    }
+    const safeSortBy = allowedSort.includes(sortField) ? sortBy : "-createdAt";
     const skip = (Number(page) - 1) * Number(limit);
 
     const reviews = await Review.find(query)
         .populate("user", "fullName email avatar")
         .populate("product", "name slug images")
-        .sort(sortBy)
+        .sort(safeSortBy)
         .skip(skip)
         .limit(Number(limit));
 
