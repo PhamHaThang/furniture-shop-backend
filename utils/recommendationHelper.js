@@ -56,7 +56,7 @@ const buildMLRequest = async ({
         includeProducts
             ? Product.find({ isDeleted: false })
                   .select(
-                      "_id name description price averageRating totalReviews soldCount stock images model3DUrl tags colors materials category brand",
+                      "_id name description price averageRating totalReviews soldCount stock images model3DUrl tags colors materials category brand slug ",
                   )
                   .populate("category", "name")
                   .populate("brand", "name")
