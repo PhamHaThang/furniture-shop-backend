@@ -37,7 +37,6 @@ dist-ssr
 .env.staging
 
 API_DOCUMENTATION.md
-README.md
 DEPLOYMENT.md
 
 # Vercel
